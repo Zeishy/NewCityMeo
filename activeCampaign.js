@@ -17,6 +17,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    function formatURL(source) {
+        try {
+            // Check if the source is a valid URL
+            const url = new URL(source);
+            return url.href;
+        } catch (e) {
+            // If not a valid URL, assume it's a relative path and prepend the base URL
+            return `http://localhost:8282/${source}`;
+        }
+    }
     // Display single content item
     const displayContentItem = (item) => {
         contentContainer.innerHTML = '';
@@ -36,7 +46,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         } else if (item.type === 'url') {
             element = document.createElement('iframe');
-            element.src = item.source;
+            element.src = formatURL(item.source); // Use the formatURL function
+            element.width = '100%';
+            element.height = '500px';
+            element.style.border = 'none';
         }
         
         contentContainer.appendChild(element);
@@ -76,5 +89,5 @@ document.addEventListener('DOMContentLoaded', async () => {
     await updateActiveCampaign();
 
     // Check for changes in active campaign every 5 seconds
-    setInterval(updateActiveCampaign, 5000);
+    // setInterval(updateActiveCampaign, 5000);
 });

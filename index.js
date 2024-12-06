@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModal = document.querySelector('.close');
     const uploadContentBtn = document.getElementById('upload-content-btn');
     const uploadContentInput = document.getElementById('upload-content-input');
+    const urlInput = document.getElementById('urlInput');
+    const uploadUrlBtn = document.getElementById('uploadUrlBtn');
     const sourceSelect = document.getElementById('source');
     let campaigns = []; // Declare campaigns array here
 
@@ -135,6 +137,29 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error uploading file:', error);
             alert('Error uploading file');
+        }
+    });
+
+    uploadUrlBtn.addEventListener('click', async () => {
+        const url = urlInput.value;
+        if (!url) {
+            alert('Please enter a URL');
+            return;
+        }
+
+        const blob = new Blob([url], { type: 'text/plain' });
+        const formData = new FormData();
+        formData.append('file', blob, 'url.txt');
+
+        try {
+            await fetch('http://localhost:8282/upload', {
+                method: 'POST',
+                body: formData
+            });
+            alert('URL uploaded successfully');
+        } catch (error) {
+            console.error('Error uploading URL:', error);
+            alert('Error uploading URL');
         }
     });
 
