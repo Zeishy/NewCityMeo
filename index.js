@@ -35,10 +35,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add new campaign
     campaignForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const formData = new FormData(campaignForm);
-        const name = formData.get('name');
-        const startDate = formData.get('startDate');
-        const endDate = formData.get('endDate');
+
+        const name = document.getElementById('name').value;
+        const startDate = new Date(document.getElementById('startDate').value);
+        const endDate = new Date(document.getElementById('endDate').value);
+        const today = new Date();
+        console.log("today:", today);
+        console.log("startday:", startDate);
+
+        // Extract date parts
+        const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        // Check if the start date and end date are valid
+        if (startDateOnly < todayOnly) {
+            alert('Start date cannot be in the past.');
+            return;
+        }
+
+        if (endDate < startDate) {
+            alert('End date must be after the start date.');
+            return;
+        }
+
+        const formData = {
+            name,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        };
+
         try {
             await fetch('/api/campaigns', {
                 method: 'POST',
