@@ -1,11 +1,12 @@
 const express = require('express');
 const path = require('path');
+const cors = require('cors'); // Add this
 const app = express();
 const PORT = 8080;
 
+app.use(cors()); // Add this
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
-
 // Serve the index.html file
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
