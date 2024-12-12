@@ -34,8 +34,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     '(No dates set)';
                 li.innerHTML = `
                     <span>${campaign.name} ${dates} - ${campaign.isActive ? 'Active' : 'Inactive'}</span>
-                    <button onclick="activateCampaign(${index})">Activate</button>
-                    <button onclick="manageCampaign(${index})">Manage</button>
+                    <div class="campaign-buttons">
+                        <button onclick="activateCampaign(${index})">Activate</button>
+                        <button onclick="manageCampaign(${index})">Manage</button>
+                        <button onclick="deleteCampaign(${index})" class="delete-btn">Delete</button>
+                    </div>
                 `;
                 campaignList.appendChild(li);
             });
@@ -90,14 +93,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Add content to campaign
+    const detectContentType = (source) => {
+        try {
+            const url = new URL(source);
+            // Check for common video streaming platforms
+            if (url.hostname.includes('youtube.com') || 
+                url.hostname.includes('vimeo.com') ||
+                url.hostname.includes('dailymotion.com')) {
+                return 'url';
+            }
+            return 'url';
+        } catch (e) {
+            // If not a URL, check file extension
+            const extension = source.toLowerCase().split('.').pop();
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+            const videoExtensions = ['mp4', 'webm', 'ogg', 'mov'];
+            
+            if (imageExtensions.includes(extension)) {
+                return 'image';
+            } else if (videoExtensions.includes(extension)) {
+                return 'video';
+            }
+            return 'url'; // Default to URL if can't determine type
+        }
+    };
+    
+    // Modify the content form submit handler
     contentForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const formData = new FormData(contentForm);
         const campaignId = formData.get('campaign-id');
-        const type = formData.get('type');
         const source = formData.get('source');
         const duration = formData.get('duration');
+        const type = detectContentType(source);
+    
         try {
             await fetch(`/api/campaigns/${campaignId}/content`, {
                 method: 'POST',
@@ -108,12 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             contentForm.reset();
             fetchCampaigns();
-            manageCampaignModal.style.display = 'none'; // Hide modal after adding content
+            manageCampaignModal.style.display = 'none';
         } catch (error) {
             console.error('Error adding content:', error);
         }
     });
-
     // Activate campaign
     window.activateCampaign = async (id) => {
         try {
@@ -131,10 +159,67 @@ document.addEventListener('DOMContentLoaded', () => {
         const campaign = campaigns[id];
         if (campaign) {
             document.getElementById('campaign-id').value = id;
+            
+            // Display existing content
+            const contentList = document.createElement('ul');
+            contentList.className = 'content-list';
+            campaign.contents.forEach((content, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${content.type}: ${content.source} (${content.duration}s)</span>
+                    <button onclick="deleteContent(${id}, ${index})" class="delete-btn">Delete</button>
+                `;
+                contentList.appendChild(li);
+            });
+            
+            // Add content list to modal
+            const modalContent = document.querySelector('.modal-content');
+            const existingList = modalContent.querySelector('.content-list');
+            if (existingList) {
+                existingList.remove();
+            }
+            modalContent.insertBefore(contentList, document.getElementById('content-form'));
+            
             await populateSourceDropdown();
             manageCampaignModal.style.display = 'block';
         } else {
             alert('Campaign not found');
+        }
+    };
+    
+        // Delete campaign function
+    window.deleteCampaign = async (id) => {
+        try {
+            const response = await fetch(`/api/campaigns/${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                await fetchCampaigns();
+            } else {
+                throw new Error('Failed to delete campaign');
+            }
+        } catch (error) {
+            console.error('Error deleting campaign:', error);
+            alert('Error deleting campaign');
+        }
+    };
+    
+    // Delete content function
+    window.deleteContent = async (campaignId, contentIndex) => {
+        try {
+            const response = await fetch(`/api/campaigns/${campaignId}/content/${contentIndex}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                await fetchCampaigns();
+                await manageCampaign(campaignId); // Refresh the manage campaign modal
+            } else {
+                throw new Error('Failed to delete content');
+            }
+        } catch (error) {
+            console.error('Error deleting content:', error);
+            alert('Error deleting content');
         }
     };
 

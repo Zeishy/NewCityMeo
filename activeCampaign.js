@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentContentIndex = 0;
     let contentItems = [];
     let carouselInterval;
+    
 
     // Fetch the active campaign
     const fetchActiveCampaign = async () => {
@@ -19,14 +20,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function formatURL(source) {
         try {
-            // Check if the source is a valid URL
             const url = new URL(source);
             return url.href;
         } catch (e) {
-            // If not a valid URL, assume it's a relative path and prepend the base URL
             return `http://localhost:8282/${source}`;
         }
     }
+
     // Display single content item
     const displayContentItem = (item) => {
         contentContainer.innerHTML = '';
@@ -40,13 +40,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             element.src = `http://localhost:8282/${item.source}`;
             element.controls = true;
             element.autoplay = true;
+            element.muted = true; // Add muted attribute for autoplay to work
+            element.playsInline = true; // Better mobile support
             // Add event listener for video end
             element.onended = () => {
                 showNextContent();
             };
+            // Ensure video plays
+            element.play().catch(e => console.error('Error playing video:', e));
         } else if (item.type === 'url') {
             element = document.createElement('iframe');
-            element.src = formatURL(item.source); // Use the formatURL function
+            element.src = formatURL(item.source);
             element.width = '100%';
             element.height = '500px';
             element.style.border = 'none';
@@ -88,6 +92,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initial load
     await updateActiveCampaign();
 
-    // Check for changes in active campaign every 5 seconds
-    // setInterval(updateActiveCampaign, 5000);
+    // WebSocket connection to listen for campaign updates
+    const socket = new WebSocket('ws://localhost:8080/ws'); // Add /ws path to match server configuration
+        
+    socket.addEventListener('open', () => {
+        console.log('WebSocket connected');
+    });
+    
+    socket.addEventListener('error', (error) => {
+        console.error('WebSocket error:', error);
+    });
+    
+    socket.addEventListener('message', async (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'campaignUpdate') {
+            await updateActiveCampaign();
+        }
+    });
 });

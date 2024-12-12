@@ -1,8 +1,17 @@
 const express = require('express');
 const path = require('path');
-const cors = require('cors'); // Add this
+const cors = require('cors');
+const http = require('http');
+const WebSocket = require('ws');
 const app = express();
 const PORT = 8080;
+
+// WebSocket server setup
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ 
+  server,
+  path: "/ws" // Add explicit WebSocket path
+});
 
 app.use(cors()); // Add this
 app.use(express.json());
@@ -26,13 +35,28 @@ app.post('/api/campaigns', (req, res) => {
   res.status(201).json(newCampaign);
 });
 
+const broadcastCampaignUpdate = () => {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'campaignUpdate' }));
+    }
+  });
+};
+
+wss.on('connection', (ws) => {
+  console.log('Client connected to WebSocket');
+  ws.on('error', console.error);
+});
+
 app.post('/api/campaigns/:id/activate', (req, res) => {
   const { id } = req.params;
   campaigns.forEach((campaign, index) => {
-    campaign.isActive = index === parseInt(id);
+      campaign.isActive = index === parseInt(id);
   });
+  broadcastCampaignUpdate(); // Broadcast update after changing active campaign
   res.json(campaigns);
 });
+
 
 app.post('/api/campaigns/:id/content', (req, res) => {
   const { id } = req.params;
@@ -50,10 +74,47 @@ app.post('/api/campaigns/:id/content', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+//app.listen(PORT, () => {
+//  console.log(`Server is running on http://localhost:${PORT}`);
+//});
+
+// Add these new endpoints after your existing endpoints in Campaign.js
+
+// Delete a campaign
+app.delete('/api/campaigns/:id', (req, res) => {
+    const { id } = req.params;
+    const index = parseInt(id);
+    
+    if (index >= 0 && index < campaigns.length) {
+        campaigns.splice(index, 1);
+        broadcastCampaignUpdate(); // Broadcast update after deleting campaign
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Campaign not found' });
+    }
 });
 
+// Delete content from a campaign
+app.delete('/api/campaigns/:id/content/:contentIndex', (req, res) => {
+    const { id, contentIndex } = req.params;
+    const campaign = campaigns[id];
+    
+    if (campaign) {
+        if (campaign.removeContent(parseInt(contentIndex))) {
+            broadcastCampaignUpdate(); // Broadcast update after deleting content
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'Content not found' });
+        }
+    } else {
+        res.status(404).json({ error: 'Campaign not found' });
+    }
+});
+
+// Use server.listen() instead
+server.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
 // Campaign class definition
 class ContentItem {
   constructor(type, source, duration) {
