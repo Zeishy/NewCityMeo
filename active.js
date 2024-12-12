@@ -20,6 +20,11 @@ app.get('/activeCampaign.js', (req, res) => {
   res.sendFile(path.join(__dirname, 'activeCampaign.js'));
 });
 
+// Serve the JSON file
+app.get('/data/urls.json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'data', 'urls.json'));
+});
+
 app.listen(PORT, () => {
   console.log(`Active campaign server is running on http://localhost:${PORT}`);
 });

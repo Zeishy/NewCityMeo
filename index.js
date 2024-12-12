@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const sourceSelect = document.getElementById('source');
     const toggleDatesBtn = document.getElementById('toggle-dates-btn');
     const datesContainer = document.getElementById('dates-container');
+    const urlList = document.getElementById('url-list');
     let campaigns = []; // Declare campaigns array here
 
     // Toggle dates visibility
@@ -181,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modalContent.insertBefore(contentList, document.getElementById('content-form'));
             
             await populateSourceDropdown();
+            await displayUrls(); // Display URLs in the modal
             manageCampaignModal.style.display = 'block';
         } else {
             alert('Campaign not found');
@@ -294,6 +296,32 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target == manageCampaignModal) {
             manageCampaignModal.style.display = 'none';
         }
+    };
+
+    // Function to fetch URLs from JSON file
+    const fetchUrlsFromJson = async () => {
+        try {
+            const response = await fetch('http://localhost:8181/data/urls.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const urls = await response.json();
+            return urls;
+        } catch (error) {
+            console.error('Error fetching URLs from JSON file:', error);
+            return [];
+        }
+    };
+
+    // Function to display URLs in the modal
+    const displayUrls = async () => {
+        const urls = await fetchUrlsFromJson();
+        urlList.innerHTML = '';
+        urls.forEach(url => {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${url.value}`;
+            urlList.appendChild(listItem);
+        });
     };
 
     fetchCampaigns();

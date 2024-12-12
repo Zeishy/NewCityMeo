@@ -4,12 +4,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let currentContentIndex = 0;
     let contentItems = [];
     let carouselInterval;
-    
 
     // Fetch the active campaign
     const fetchActiveCampaign = async () => {
         try {
             const response = await fetch('http://localhost:8080/api/campaigns');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
             const campaigns = await response.json();
             const activeCampaign = campaigns.find(campaign => campaign.isActive);
             return activeCampaign;
@@ -18,20 +20,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    function formatURL(source) {
+    // Fetch URLs from JSON file
+    const fetchUrlsFromJson = async () => {
         try {
-            const url = new URL(source);
-            return url.href;
-        } catch (e) {
-            return `http://localhost:8282/${source}`;
+            const response = await fetch('http://localhost:8181/data/urls.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const urls = await response.json();
+            return urls;
+        } catch (error) {
+            console.error('Error fetching URLs from JSON file:', error);
+            return [];
         }
-    }
+    };
 
     // Display single content item
-    const displayContentItem = (item) => {
+    const displayContentItem = async (item) => {
         contentContainer.innerHTML = '';
         let element;
-        
+
         if (item.type === 'image') {
             element = document.createElement('img');
             element.src = `http://localhost:8282/${item.source}`;
@@ -50,12 +58,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             element.play().catch(e => console.error('Error playing video:', e));
         } else if (item.type === 'url') {
             element = document.createElement('iframe');
-            element.src = formatURL(item.source);
+            const urls = await fetchUrlsFromJson();
+            const urlItem = urls.find(url => url.id === item.source);
+            if (urlItem) {
+                element.src = urlItem.value;
+            } else {
+                element.src = 'about:blank';
+            }
             element.width = '100%';
             element.height = '500px';
             element.style.border = 'none';
         }
-        
+
         contentContainer.appendChild(element);
 
         // If it's not a video, set timeout for next content
@@ -94,19 +108,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // WebSocket connection to listen for campaign updates
     const socket = new WebSocket('ws://localhost:8080/ws'); // Add /ws path to match server configuration
-        
+
     socket.addEventListener('open', () => {
         console.log('WebSocket connected');
     });
-    
+
     socket.addEventListener('error', (error) => {
         console.error('WebSocket error:', error);
     });
-    
+
     socket.addEventListener('message', async (event) => {
         const data = JSON.parse(event.data);
         if (data.type === 'campaignUpdate') {
             await updateActiveCampaign();
         }
+    });
+
+    // Example usage of fetchUrlsFromJson
+    fetchUrlsFromJson().then(urls => {
+        urls.forEach(url => {
+            console.log(`URL: ${url.value}`);
+        });
     });
 });
