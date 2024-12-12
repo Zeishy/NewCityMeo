@@ -85,10 +85,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Check for changes in active campaign every 5 seconds
-    setInterval(updateActiveCampaign, 5000);
-
     // Initial load
     await updateActiveCampaign();
 
+    // Check for changes in active campaign every 5 seconds
+    // setInterval(updateActiveCampaign, 5000);
 });
