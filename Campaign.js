@@ -64,10 +64,10 @@ class ContentItem {
 }
 
 class Campaign {
-  constructor(name, startDate, endDate) {
+  constructor(name, startDate = null, endDate = null) {
     this.name = name;
-    this.startDate = new Date(startDate);
-    this.endDate = new Date(endDate);
+    this.startDate = startDate ? new Date(startDate) : null;
+    this.endDate = endDate ? new Date(endDate) : null;
     this.isActive = false;
     this.contents = [];
     this.totalDuration = 0;

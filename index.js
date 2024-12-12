@@ -9,7 +9,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlInput = document.getElementById('urlInput');
     const uploadUrlBtn = document.getElementById('uploadUrlBtn');
     const sourceSelect = document.getElementById('source');
+    const toggleDatesBtn = document.getElementById('toggle-dates-btn');
+    const datesContainer = document.getElementById('dates-container');
     let campaigns = []; // Declare campaigns array here
+
+    // Toggle dates visibility
+    toggleDatesBtn.addEventListener('click', () => {
+        const isHidden = datesContainer.style.display === 'none';
+        datesContainer.style.display = isHidden ? 'block' : 'none';
+        toggleDatesBtn.textContent = isHidden ? 'Remove Dates' : 'Add Dates';
+    });
 
     // Fetch and display campaigns
     const fetchCampaigns = async () => {
@@ -20,8 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
             campaigns.forEach((campaign, index) => {
                 const li = document.createElement('li');
                 li.className = campaign.isActive ? 'active' : '';
+                const dates = campaign.startDate && campaign.endDate ? 
+                    `(${new Date(campaign.startDate).toLocaleDateString()} - ${new Date(campaign.endDate).toLocaleDateString()})` : 
+                    '(No dates set)';
                 li.innerHTML = `
-                    <span>${campaign.name} (Start: ${new Date(campaign.startDate).toLocaleDateString()}, End: ${new Date(campaign.endDate).toLocaleDateString()}) - ${campaign.isActive ? 'Active' : 'Inactive'}</span>
+                    <span>${campaign.name} ${dates} - ${campaign.isActive ? 'Active' : 'Inactive'}</span>
                     <button onclick="activateCampaign(${index})">Activate</button>
                     <button onclick="manageCampaign(${index})">Manage</button>
                 `;
@@ -37,32 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const name = document.getElementById('name').value;
-        const startDate = new Date(document.getElementById('startDate').value);
-        const endDate = new Date(document.getElementById('endDate').value);
-        const today = new Date();
-        console.log("today:", today);
-        console.log("startday:", startDate);
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
 
-        // Extract date parts
-        const startDateOnly = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
-        const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        // Only validate dates if they are provided
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            const today = new Date();
 
-        // Check if the start date and end date are valid
-        if (startDateOnly < todayOnly) {
-            alert('Start date cannot be in the past.');
-            return;
+            if (start < today) {
+                alert('Start date cannot be in the past.');
+                return;
+            }
+
+            if (end < start) {
+                alert('End date must be after the start date.');
+                return;
+            }
         }
-
-        if (endDate < startDate) {
-            alert('End date must be after the start date.');
-            return;
-        }
-
-        const formData = {
-            name,
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-        };
 
         try {
             await fetch('/api/campaigns', {
@@ -70,9 +75,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name, startDate, endDate })
+                body: JSON.stringify({ 
+                    name,
+                    startDate: startDate || null,
+                    endDate: endDate || null
+                })
             });
             campaignForm.reset();
+            datesContainer.style.display = 'none';
+            toggleDatesBtn.textContent = 'Add Dates';
             fetchCampaigns();
         } catch (error) {
             console.error('Error adding campaign:', error);

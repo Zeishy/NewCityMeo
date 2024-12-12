@@ -23,10 +23,13 @@
         <form id="campaign-form">
             <label for="name">Name:</label>
             <input type="text" id="name" name="name" required>
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate" name="startDate" required>
-            <label for="endDate">End Date:</label>
-            <input type="date" id="endDate" name="endDate" required>
+            <button type="button" id="toggle-dates-btn">Add Dates</button>
+            <div id="dates-container" style="display: none;">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate" name="startDate">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate" name="endDate">
+            </div>
             <button type="submit">Add Campaign</button>
         </form>
     </div>
