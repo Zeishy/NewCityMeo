@@ -1,0 +1,7 @@
+- compte admin qui manage les devices
+    ------> ajouter id a la partie front (device) pour pouvoir diffuser une campagne sur certaines devices et une autre campagne sur d'autre devices choisis
+    ------> le front (device) fait des requetes au back afin de savoir quoi afficher
+
+- compte admin qui gère les users(add, delete, perms?)
+    ------> pourrait donner des permissions a certains users pour créer une campagne
+    ------> possible de voir les devices connectés
