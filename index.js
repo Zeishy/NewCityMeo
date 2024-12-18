@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const campaignList = document.getElementById('campaign-list');
     const campaignForm = document.getElementById('campaign-form');
-    const contentForm = document.getElementById('content-form');
+    const contentFormFile = document.getElementById('content-form-file');
+    const contentFormUrl = document.getElementById('content-form-url');
     const manageCampaignModal = document.getElementById('manage-campaign-modal');
     const closeModal = document.querySelector('.close');
     const uploadContentBtn = document.getElementById('upload-content-btn');
@@ -120,14 +121,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // Modify the content form submit handler
-    contentForm.addEventListener('submit', async (e) => {
+    contentFormFile.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const formData = new FormData(contentForm);
-        const campaignId = formData.get('campaign-id');
-        const source = formData.get('source');
-        const duration = formData.get('duration');
-        const type = detectContentType(source);
-    
+        const campaignId = document.getElementById('campaign-id-file').value;
+        const type = detectContentType(document.getElementById('source').value);
+        const source = document.getElementById('source').value;
+        const duration = document.getElementById('duration-file').value;
         try {
             await fetch(`/api/campaigns/${campaignId}/content`, {
                 method: 'POST',
@@ -136,9 +135,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 body: JSON.stringify({ type, source, duration })
             });
-            contentForm.reset();
+            contentFormFile.reset();
             fetchCampaigns();
-            manageCampaignModal.style.display = 'none';
+            manageCampaignModal.style.display = 'none'; // Hide modal after adding content
+        } catch (error) {
+            console.error('Error adding content:', error);
+        }
+    });
+
+    // Add content to campaign from URL
+    contentFormUrl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const campaignId = document.getElementById('campaign-id-url').value;
+        const type = 'url';
+        const source = document.getElementById('url').value;
+        const duration = document.getElementById('duration-url').value;
+        try {
+            await fetch(`/api/campaigns/${campaignId}/content`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type, source, duration })
+            });
+            contentFormUrl.reset();
+            fetchCampaigns();
+            manageCampaignModal.style.display = 'none'; // Hide modal after adding content
         } catch (error) {
             console.error('Error adding content:', error);
         }
@@ -159,8 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
     window.manageCampaign = async (id) => {
         const campaign = campaigns[id];
         if (campaign) {
-            document.getElementById('campaign-id').value = id;
-            
+            document.getElementById('campaign-id-file').value = id;
+            document.getElementById('campaign-id-url').value = id;
             // Display existing content
             const contentList = document.createElement('ul');
             contentList.className = 'content-list';

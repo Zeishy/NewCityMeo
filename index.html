@@ -39,12 +39,19 @@
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Manage Campaign</h2>
-            <form id="content-form">
-                <input type="hidden" id="campaign-id" name="campaign-id">
+            <form id="content-form-file">
+                <input type="hidden" id="campaign-id-file" name="campaign-id">
                 <label for="source">Source:</label>
                 <select id="source" name="source" required></select>
                 <label for="duration">Duration (seconds):</label>
-                <input type="number" id="duration" name="duration" required>
+                <input type="number" id="duration-file" name="duration" required>
+                <button type="submit">Add Content</button>
+            </form>
+            <form id="content-form-url">
+                <input type="hidden" id="campaign-id-url" name="campaign-id">
+                <label for="duration">Duration (seconds):</label>
+                <input type="number" id="duration-url" name="duration" required>
+                <input type="text" id="url" name="url" placeholder="Enter URL" required>
                 <button type="submit">Add Content</button>
             </form>
             <h3>Available URLs</h3>

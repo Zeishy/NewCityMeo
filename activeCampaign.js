@@ -58,16 +58,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             element.play().catch(e => console.error('Error playing video:', e));
         } else if (item.type === 'url') {
             element = document.createElement('iframe');
-            const urls = await fetchUrlsFromJson();
-            const urlItem = urls.find(url => url.id === item.source);
-            if (urlItem) {
-                element.src = urlItem.value;
-            } else {
-                element.src = 'about:blank';
-            }
             element.width = '100%';
             element.height = '500px';
             element.style.border = 'none';
+            element.src = item.source;
         }
 
         contentContainer.appendChild(element);
