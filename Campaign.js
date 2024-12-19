@@ -215,6 +215,47 @@ app.delete('/api/campaigns/:id/content/:contentIndex', (req, res) => {
   }
 });
 
+// Add preview endpoint
+app.get('/previsualized/:deviceId', (req, res) => {
+    const { deviceId } = req.params;
+    const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Device Preview</title>
+        <link rel="stylesheet" href="/activeCampaign.css">
+        <style>
+            .preview-banner {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: #333;
+                color: white;
+                padding: 10px;
+                text-align: center;
+            }
+            #campaign-container {
+                margin-top: 50px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="preview-banner">Preview Mode - Device ID: ${deviceId}</div>
+        <div id="campaign-container">
+            <h1 id="campaign-name"></h1>
+            <div id="content-container"></div>
+        </div>
+        <script>window.DEVICE_ID = "${deviceId}";</script>
+        <script src="/activeCampaign.js"></script>
+    </body>
+    </html>
+    `;
+    res.send(html);
+});
+
 // API endpoints for devices
 app.get('/api/devices', (req, res) => {
   res.json(devices);
@@ -244,30 +285,36 @@ app.delete('/api/devices/:id', (req, res) => {
 });
 
 app.post('/api/devices/:id/toggle', (req, res) => {
-  const { id } = req.params;
-  const device = devices.find(device => device.id === parseInt(id));
-  
-  if (!device) {
-      return res.status(404).json({ error: 'Device not found' });
-  }
-
-  device.isActive = !device.isActive;
-  if (device.isActive && device.activeCampaignId) {
-    const campaign = campaigns.find(c => c.id === device.activeCampaignId);
-    if (campaign) {
-      campaign.isActive = true;
+    const { id } = req.params;
+    const device = devices.find(device => device.id === parseInt(id));
+    
+    if (!device) {
+        return res.status(404).json({ error: 'Device not found' });
     }
-  }
-  broadcastCampaignUpdate();
-  res.json(device);
+
+    device.isActive = !device.isActive;
+    
+    // Broadcast device state change immediately
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ 
+                type: 'deviceUpdate',
+                deviceId: device.id,
+                isActive: device.isActive,
+                activeCampaignId: device.activeCampaignId
+            }));
+        }
+    });
+
+    res.json(device);
 });
 
 const broadcastCampaignUpdate = () => {
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'campaignUpdate' }));
-    }
-  });
+    wss.clients.forEach(client => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({ type: 'campaignUpdate' }));
+        }
+    });
 };
 
 wss.on('connection', (ws) => {

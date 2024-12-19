@@ -184,3 +184,16 @@ h1, h2 {
     background-color: #4CAF50;
     color: white;
 }
+
+.preview-btn {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.preview-btn:hover {
+    background-color: #1976D2;
+}

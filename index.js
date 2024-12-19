@@ -418,6 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button onclick="toggleDevice(${device.id})" class="${device.isActive ? 'active' : ''}">
                                 ${device.isActive ? 'Deactivate' : 'Activate'}
                             </button>
+                            <button onclick="previewDevice(${device.id})" class="preview-btn">Preview</button>
                             <button onclick="deleteDevice(${device.id})" class="delete-btn">Delete</button>
                         </div>
                     </div>
@@ -427,6 +428,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error fetching devices:', error);
         }
+    };
+    
+    // Add preview function
+    window.previewDevice = (deviceId) => {
+        window.open(`/previsualized/${deviceId}`, `preview_${deviceId}`, 'width=800,height=600');
     };
     
     window.assignCampaign = async (deviceId, campaignId) => {

@@ -89,12 +89,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             displayContentItem(contentItems[currentContentIndex]);
         } else {
             contentContainer.innerHTML = '';
+            campaignNameElement.textContent = ''; // Keep this to clear any existing text
             if (carouselInterval) {
                 clearTimeout(carouselInterval);
             }
         }
     };
-
+    
     // Set up WebSocket connection for real-time updates
     const connectWebSocket = () => {
         const socket = new WebSocket('ws://localhost:8080/ws');
@@ -102,24 +103,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         socket.addEventListener('open', () => {
             console.log('WebSocket connected');
         });
-
+    
         socket.addEventListener('message', async (event) => {
             const data = JSON.parse(event.data);
-            if (data.type === 'campaignUpdate') {
+            if (data.type === 'deviceUpdate' && data.deviceId === parseInt(deviceId)) {
+                // Update immediately when device state changes
+                await updateCampaign();
+            } else if (data.type === 'campaignUpdate') {
+                // Update when campaign changes
                 await updateCampaign();
             }
         });
-
+    
         socket.addEventListener('close', () => {
             console.log('WebSocket disconnected, reconnecting...');
             setTimeout(connectWebSocket, 5000);
         });
-
+    
         socket.addEventListener('error', (error) => {
             console.error('WebSocket error:', error);
         });
     };
-
+    
     // Initial setup
     await updateCampaign();
     connectWebSocket();
