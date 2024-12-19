@@ -3,6 +3,9 @@ const path = require('path');
 const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
+const bcrypt = require('bcrypt');
+const session = require('express-session');
+const db = require('./database');
 const app = express();
 const PORT = 8080;
 
@@ -16,10 +19,88 @@ const wss = new WebSocket.Server({
 app.use(cors()); // Add this
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
-// Serve the index.html file
-app.get('/', (req, res) => {
+
+// Add session middleware
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Set to true if using HTTPS
+}));
+
+app.get('/', isAuthenticated, checkRole('admin'), (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
+app.get('/auth', (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth.html'));
+});
+
+// Retrieve all users
+app.get('/users', (req, res) => {
+  db.all(`SELECT id, username, role FROM users`, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to retrieve users' });
+    }
+    res.status(200).json(rows);
+  });
+});
+
+// Create a new user
+app.post('/users', async (req, res) => {
+  const { username, password, role } = req.body;
+  if (!username || !password || !role) {
+    return res.status(400).json({ error: 'Username, password, and role are required' });
+  }
+  const hashedPassword = await bcrypt.hash(password, 10);
+  db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`, [username, hashedPassword, role], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'User creation failed' });
+    }
+    res.status(201).json({ id: this.lastID, username, role });
+  });
+});
+
+// Login user
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
+    if (err || !user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Invalid username or password' });
+    }
+    req.session.user = user; // Store user in session
+    res.status(200).json({ message: 'Login successful' });
+  });
+});
+
+// Delete a user
+app.delete('/users/:username', (req, res) => {
+  const { username } = req.params;
+  db.run(`DELETE FROM users WHERE username = ?`, [username], function(err) {
+    if (err) {
+      return res.status(500).json({ error: 'User deletion failed' });
+    }
+    res.status(204).send();
+  });
+});
+
+// Middleware to check if user is logged in
+function isAuthenticated(req, res, next) {
+  if (req.session.user) {
+    return next();
+  }
+  res.status(401).json({ error: 'Unauthorized' });
+}
+
+// Middleware to check permissions
+function checkRole(role) {
+  return (req, res, next) => {
+    if (req.session.user && req.session.user.role === role) {
+      return next();
+    }
+    res.status(403).json({ error: 'Forbidden' });
+  };
+}
 
 // API endpoints for campaigns
 let campaigns = [];
@@ -57,7 +138,6 @@ app.post('/api/campaigns/:id/activate', (req, res) => {
   res.json(campaigns);
 });
 
-
 app.post('/api/campaigns/:id/content', (req, res) => {
   const { id } = req.params;
   const { type, source, duration } = req.body;
@@ -73,12 +153,6 @@ app.post('/api/campaigns/:id/content', (req, res) => {
     res.status(404).json({ error: 'Campaign not found' });
   }
 });
-
-//app.listen(PORT, () => {
-//  console.log(`Server is running on http://localhost:${PORT}`);
-//});
-
-// Add these new endpoints after your existing endpoints in Campaign.js
 
 // Delete a campaign
 app.delete('/api/campaigns/:id', (req, res) => {
@@ -115,6 +189,7 @@ app.delete('/api/campaigns/:id/content/:contentIndex', (req, res) => {
 server.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
 // Campaign class definition
 class ContentItem {
   constructor(type, source, duration) {
@@ -132,6 +207,8 @@ class Campaign {
     this.isActive = false;
     this.contents = [];
     this.totalDuration = 0;
+
+    this.checkAndToggleActive();
   }
 
   addContent(type, source, duration) {
@@ -166,5 +243,16 @@ class Campaign {
 
   getDuration() {
     return this.totalDuration;
+  }
+
+  checkAndToggleActive() {
+    const now = new Date();
+    if (this.startDate && this.endDate) {
+      if (now >= this.startDate && now <= this.endDate) {
+        this.isActive = true;
+      } else {
+        this.isActive = false;
+      }
+    }
   }
 }

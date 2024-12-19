@@ -3,3 +3,4 @@
 pkill -f "node Campaign.js"
 pkill -f "node active.js"
 pkill -f "node content.js"
+pkill -f "node database.js"

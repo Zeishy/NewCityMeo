@@ -3,3 +3,4 @@
 node Campaign.js &
 node content.js &
 node active.js &
+node database.js
