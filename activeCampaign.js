@@ -5,69 +5,69 @@ document.addEventListener('DOMContentLoaded', async () => {
     let contentItems = [];
     let carouselInterval;
 
-    // Fetch the active campaign
-    const fetchActiveCampaign = async () => {
-        try {
-            const response = await fetch('http://localhost:8080/api/campaigns');
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const campaigns = await response.json();
-            const activeCampaign = campaigns.find(campaign => campaign.isActive);
-            return activeCampaign;
-        } catch (error) {
-            console.error('Error fetching active campaign:', error);
-        }
-    };
+    // Get device ID from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const deviceId = window.DEVICE_ID;
 
-    // Fetch URLs from JSON file
-    const fetchUrlsFromJson = async () => {
+    if (!deviceId) {
+        campaignNameElement.textContent = 'No device ID provided';
+        return;
+    }
+
+    // Fetch the assigned campaign for this device
+    const fetchAssignedCampaign = async () => {
         try {
-            const response = await fetch('http://localhost:8181/data/urls.json');
+            const response = await fetch(`http://localhost:8080/api/devices/${deviceId}/campaign`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const urls = await response.json();
-            return urls;
+            const data = await response.json();
+            if (data.message) {
+                campaignNameElement.textContent = data.message;
+                return null;
+            }
+            return data;
         } catch (error) {
-            console.error('Error fetching URLs from JSON file:', error);
-            return [];
+            console.error('Error fetching assigned campaign:', error);
+            campaignNameElement.textContent = 'Error fetching campaign';
+            return null;
         }
     };
 
     // Display single content item
     const displayContentItem = async (item) => {
+        if (!item) return;
+        
         contentContainer.innerHTML = '';
         let element;
 
         if (item.type === 'image') {
             element = document.createElement('img');
             element.src = `http://localhost:8282/${item.source}`;
+            contentContainer.appendChild(element);
+            // Set timeout for next content after image loads
+            element.onload = () => {
+                if (carouselInterval) clearTimeout(carouselInterval);
+                carouselInterval = setTimeout(showNextContent, item.duration * 1000);
+            };
         } else if (item.type === 'video') {
             element = document.createElement('video');
             element.src = `http://localhost:8282/${item.source}`;
             element.controls = true;
             element.autoplay = true;
-            element.muted = true; // Add muted attribute for autoplay to work
-            element.playsInline = true; // Better mobile support
-            // Add event listener for video end
-            element.onended = () => {
-                showNextContent();
-            };
-            // Ensure video plays
+            element.muted = true;
+            element.playsInline = true;
+            element.onended = showNextContent;
+            contentContainer.appendChild(element);
             element.play().catch(e => console.error('Error playing video:', e));
         } else if (item.type === 'url') {
             element = document.createElement('iframe');
+            element.src = item.source;
             element.width = '100%';
             element.height = '500px';
             element.style.border = 'none';
-            element.src = item.source;
-        }
-
-        contentContainer.appendChild(element);
-
-        // If it's not a video, set timeout for next content
-        if (item.type !== 'video') {
+            contentContainer.appendChild(element);
+            // Set timeout for next content
             if (carouselInterval) clearTimeout(carouselInterval);
             carouselInterval = setTimeout(showNextContent, item.duration * 1000);
         }
@@ -75,21 +75,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Show next content
     const showNextContent = () => {
-        if (contentItems.length === 0) return;
+        if (!contentItems || contentItems.length === 0) return;
         currentContentIndex = (currentContentIndex + 1) % contentItems.length;
         displayContentItem(contentItems[currentContentIndex]);
     };
 
-    // Update active campaign and start carousel
-    const updateActiveCampaign = async () => {
-        const activeCampaign = await fetchActiveCampaign();
-        if (activeCampaign && activeCampaign.contents.length > 0) {
-            campaignNameElement.textContent = activeCampaign.name;
-            contentItems = activeCampaign.contents;
+    // Update campaign content
+    const updateCampaign = async () => {
+        const campaign = await fetchAssignedCampaign();
+        if (campaign && campaign.contents?.length > 0) {
+            contentItems = campaign.contents;
             currentContentIndex = 0;
             displayContentItem(contentItems[currentContentIndex]);
         } else {
-            campaignNameElement.textContent = 'No active campaign';
             contentContainer.innerHTML = '';
             if (carouselInterval) {
                 clearTimeout(carouselInterval);
@@ -97,31 +95,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // Initial load
-    await updateActiveCampaign();
-
-    // WebSocket connection to listen for campaign updates
-    const socket = new WebSocket('ws://localhost:8080/ws'); // Add /ws path to match server configuration
-
-    socket.addEventListener('open', () => {
-        console.log('WebSocket connected');
-    });
-
-    socket.addEventListener('error', (error) => {
-        console.error('WebSocket error:', error);
-    });
-
-    socket.addEventListener('message', async (event) => {
-        const data = JSON.parse(event.data);
-        if (data.type === 'campaignUpdate') {
-            await updateActiveCampaign();
-        }
-    });
-
-    // Example usage of fetchUrlsFromJson
-    fetchUrlsFromJson().then(urls => {
-        urls.forEach(url => {
-            console.log(`URL: ${url.value}`);
+    // Set up WebSocket connection for real-time updates
+    const connectWebSocket = () => {
+        const socket = new WebSocket('ws://localhost:8080/ws');
+        
+        socket.addEventListener('open', () => {
+            console.log('WebSocket connected');
         });
-    });
+
+        socket.addEventListener('message', async (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'campaignUpdate') {
+                await updateCampaign();
+            }
+        });
+
+        socket.addEventListener('close', () => {
+            console.log('WebSocket disconnected, reconnecting...');
+            setTimeout(connectWebSocket, 5000);
+        });
+
+        socket.addEventListener('error', (error) => {
+            console.error('WebSocket error:', error);
+        });
+    };
+
+    // Initial setup
+    await updateCampaign();
+    connectWebSocket();
 });
