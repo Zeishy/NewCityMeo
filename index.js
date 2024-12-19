@@ -13,7 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleDatesBtn = document.getElementById('toggle-dates-btn');
     const datesContainer = document.getElementById('dates-container');
     const urlList = document.getElementById('url-list');
+    const deviceList = document.getElementById('device-list');
+    const deviceForm = document.getElementById('device-form');
     let campaigns = []; // Declare campaigns array here
+    let devices = []; // Declare devices array here
 
     // Toggle dates visibility
     toggleDatesBtn.addEventListener('click', () => {
@@ -26,9 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fetchCampaigns = async () => {
         try {
             const response = await fetch('/api/campaigns');
-            campaigns = await response.json(); // Assign fetched campaigns to the array
+            campaigns = await response.json();
             campaignList.innerHTML = '';
-            campaigns.forEach((campaign, index) => {
+            campaigns.forEach((campaign) => {
                 const li = document.createElement('li');
                 li.className = campaign.isActive ? 'active' : '';
                 const dates = campaign.startDate && campaign.endDate ? 
@@ -37,9 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.innerHTML = `
                     <span>${campaign.name} ${dates} - ${campaign.isActive ? 'Active' : 'Inactive'}</span>
                     <div class="campaign-buttons">
-                        <button onclick="activateCampaign(${index})">Activate</button>
-                        <button onclick="manageCampaign(${index})">Manage</button>
-                        <button onclick="deleteCampaign(${index})" class="delete-btn">Delete</button>
+                        <button onclick="manageCampaign(${campaign.id})">Manage</button>
+                        <button onclick="deleteCampaign(${campaign.id})" class="delete-btn">Delete</button>
                     </div>
                 `;
                 campaignList.appendChild(li);
@@ -123,23 +125,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Modify the content form submit handler
     contentFormFile.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const campaignId = document.getElementById('campaign-id-file').value;
+        const campaignId = parseInt(document.getElementById('campaign-id-file').value);
         const type = detectContentType(document.getElementById('source').value);
         const source = document.getElementById('source').value;
-        const duration = document.getElementById('duration-file').value;
+        const duration = parseInt(document.getElementById('duration-file').value);
+        
+        console.log('Adding content:', { campaignId, type, source, duration }); // Debug log
+        
         try {
-            await fetch(`/api/campaigns/${campaignId}/content`, {
+            const response = await fetch(`/api/campaigns/${campaignId}/content`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ type, source, duration })
             });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to add content');
+            }
+            
             contentFormFile.reset();
-            fetchCampaigns();
-            manageCampaignModal.style.display = 'none'; // Hide modal after adding content
+            await fetchCampaigns();
+            await manageCampaign(campaignId); // Refresh the campaign content display
+            
         } catch (error) {
             console.error('Error adding content:', error);
+            alert('Error adding content: ' + error.message);
         }
     });
 
@@ -165,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error adding content:', error);
         }
     });
+
     // Activate campaign
     window.activateCampaign = async (id) => {
         try {
@@ -178,22 +192,45 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Manage campaign
-    window.manageCampaign = async (id) => {
-        const campaign = campaigns[id];
-        if (campaign) {
-            document.getElementById('campaign-id-file').value = id;
-            document.getElementById('campaign-id-url').value = id;
+    window.manageCampaign = async (campaignId) => {
+        try {
+            // Convert campaignId to number since it's coming as a string from the HTML
+            campaignId = parseInt(campaignId);
+            
+            // Find the campaign by its ID
+            const campaign = campaigns.find(c => c.id === campaignId);
+            
+            if (!campaign) {
+                console.log('Available campaigns:', campaigns);
+                console.log('Looking for campaign with ID:', campaignId);
+                alert('Campaign not found');
+                return;
+            }
+    
+            // Set form values
+            document.getElementById('campaign-id-file').value = campaignId;
+            document.getElementById('campaign-id-url').value = campaignId;
+            
             // Display existing content
             const contentList = document.createElement('ul');
             contentList.className = 'content-list';
-            campaign.contents.forEach((content, index) => {
+            
+            if (campaign.contents && campaign.contents.length > 0) {
+                campaign.contents.forEach((content, index) => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="content-item">
+                            <span>${content.type}: ${content.source} (${content.duration}s)</span>
+                            <button onclick="deleteContent(${campaignId}, ${index})" class="delete-btn">Delete</button>
+                        </div>
+                    `;
+                    contentList.appendChild(li);
+                });
+            } else {
                 const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${content.type}: ${content.source} (${content.duration}s)</span>
-                    <button onclick="deleteContent(${id}, ${index})" class="delete-btn">Delete</button>
-                `;
+                li.textContent = 'No content added yet';
                 contentList.appendChild(li);
-            });
+            }
             
             // Add content list to modal
             const modalContent = document.querySelector('.modal-content');
@@ -201,24 +238,34 @@ document.addEventListener('DOMContentLoaded', () => {
             if (existingList) {
                 existingList.remove();
             }
-            modalContent.insertBefore(contentList, document.getElementById('content-form'));
+            modalContent.insertBefore(contentList, document.getElementById('content-form-file'));
             
+            // Populate source dropdown and show modal
             await populateSourceDropdown();
-            await displayUrls(); // Display URLs in the modal
             manageCampaignModal.style.display = 'block';
-        } else {
-            alert('Campaign not found');
+        } catch (error) {
+            console.error('Error managing campaign:', error);
+            alert('Error managing campaign');
         }
     };
     
-        // Delete campaign function
-    window.deleteCampaign = async (id) => {
+    // Add this CSS to your style.css file
+    // Delete campaign function
+    window.deleteCampaign = async (campaignId) => {
         try {
-            const response = await fetch(`/api/campaigns/${id}`, {
+            // Find the campaign in the campaigns array
+            const campaign = campaigns.find(c => c.id === campaignId);
+            if (!campaign) {
+                alert('Campaign not found');
+                return;
+            }
+    
+            const response = await fetch(`/api/campaigns/${campaignId}`, {
                 method: 'DELETE'
             });
+    
             if (response.ok) {
-                await fetchCampaigns();
+                await fetchCampaigns(); // Refresh the campaigns list
             } else {
                 throw new Error('Failed to delete campaign');
             }
@@ -235,12 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'DELETE'
             });
             
-            if (response.ok) {
-                await fetchCampaigns();
-                await manageCampaign(campaignId); // Refresh the manage campaign modal
-            } else {
+            if (!response.ok) {
                 throw new Error('Failed to delete content');
             }
+            
+            await fetchCampaigns();
+            await manageCampaign(campaignId); // Refresh the campaign content display
         } catch (error) {
             console.error('Error deleting content:', error);
             alert('Error deleting content');
@@ -279,6 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
             alert('File uploaded successfully');
+            await populateSourceDropdown(); // Refresh the source dropdown
         } catch (error) {
             console.error('Error uploading file:', error);
             alert('Error uploading file');
@@ -302,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: formData
             });
             alert('URL uploaded successfully');
+            await populateSourceDropdown(); // Refresh the source dropdown
         } catch (error) {
             console.error('Error uploading URL:', error);
             alert('Error uploading URL');
@@ -346,5 +395,105 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // Fetch and display devices
+    const fetchDevices = async () => {
+        try {
+            const response = await fetch('/api/devices');
+            devices = await response.json();
+            deviceList.innerHTML = '';
+            devices.forEach((device) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <div class="device-info">
+                        <span>${device.name} (ID: ${device.id})</span>
+                        <div class="device-controls">
+                            <select id="campaign-select-${device.id}" onchange="assignCampaign(${device.id}, this.value)">
+                                <option value="">Select Campaign</option>
+                                ${campaigns.map(campaign => `
+                                    <option value="${campaign.id}" ${device.activeCampaignId === campaign.id ? 'selected' : ''}>
+                                        ${campaign.name}
+                                    </option>
+                                `).join('')}
+                            </select>
+                            <button onclick="toggleDevice(${device.id})" class="${device.isActive ? 'active' : ''}">
+                                ${device.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button onclick="deleteDevice(${device.id})" class="delete-btn">Delete</button>
+                        </div>
+                    </div>
+                `;
+                deviceList.appendChild(li);
+            });
+        } catch (error) {
+            console.error('Error fetching devices:', error);
+        }
+    };
+    
+    window.assignCampaign = async (deviceId, campaignId) => {
+        try {
+            const response = await fetch(`/api/devices/${deviceId}/assign`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ campaignId: campaignId || null })
+            });
+            if (!response.ok) throw new Error('Failed to assign campaign');
+            await fetchDevices();
+        } catch (error) {
+            console.error('Error assigning campaign:', error);
+            alert('Error assigning campaign to device');
+        }
+    };
+    // Add new device
+    deviceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('device-name').value;
+        
+        try {
+            await fetch('/api/devices', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            });
+            deviceForm.reset();
+            fetchDevices();
+        } catch (error) {
+            console.error('Error adding device:', error);
+        }
+    });
+
+    window.toggleDevice = async (deviceId) => {
+        try {
+            const response = await fetch(`/api/devices/${deviceId}/toggle`, {
+                method: 'POST'
+            });
+            if (!response.ok) throw new Error('Failed to toggle device');
+            await fetchDevices();
+        } catch (error) {
+            console.error('Error toggling device:', error);
+            alert('Error toggling device');
+        }
+    };
+
+    // Delete device function
+    window.deleteDevice = async (deviceId) => {
+        try {
+            const response = await fetch(`/api/devices/${deviceId}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error('Failed to delete device');
+            }
+            await fetchDevices();
+        } catch (error) {
+            console.error('Error deleting device:', error);
+            alert('Error deleting device');
+        }
+    };
+
     fetchCampaigns();
+    fetchDevices();
 });

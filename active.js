@@ -2,29 +2,52 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const app = express();
-const PORT = 8181;
+const PORT = process.argv[2] || 8181;
+const DEVICE_ID = process.argv[3];
 
-// Enable CORS
 app.use(cors());
 
-// Serve only the specific files needed for the active campaign viewer
+// Serve static files with correct MIME types
+app.use('/static', express.static(path.join(__dirname), {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+        } else if (filePath.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+        }
+    }
+}));
+
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'activeCampaign.html'));
+    res.redirect(`/device/${DEVICE_ID}`);
 });
 
-app.get('/activeCampaign.css', (req, res) => {
-  res.sendFile(path.join(__dirname, 'activeCampaign.css'));
-});
-
-app.get('/activeCampaign.js', (req, res) => {
-  res.sendFile(path.join(__dirname, 'activeCampaign.js'));
-});
-
-// Serve the JSON file
-app.get('/data/urls.json', (req, res) => {
-  res.sendFile(path.join(__dirname, 'data', 'urls.json'));
+app.get('/device/:id', (req, res) => {
+    // Modify the HTML content to use /static paths and pass deviceId
+    const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Active Campaign</title>
+        <link rel="stylesheet" href="/static/activeCampaign.css">
+    </head>
+    <body>
+        <div id="campaign-container">
+            <h1 id="campaign-name"></h1>
+            <div id="content-container"></div>
+        </div>
+        <script>
+            window.DEVICE_ID = "${DEVICE_ID}";
+        </script>
+        <script src="/static/activeCampaign.js"></script>
+    </body>
+    </html>
+    `;
+    res.send(html);
 });
 
 app.listen(PORT, () => {
-  console.log(`Active campaign server is running on http://localhost:${PORT}`);
+    console.log(`Device ${DEVICE_ID} front server running on http://localhost:${PORT}`);
 });
