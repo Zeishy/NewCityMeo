@@ -197,3 +197,61 @@ h1, h2 {
 .preview-btn:hover {
     background-color: #1976D2;
 }
+
+.duration-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+}
+
+.content-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    opacity: 1;
+    border-bottom: 2px solid #4CAF50;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.form-container {
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 4px;
+}
+
+.date-active {
+    color: #4CAF50;
+    font-weight: bold;
+    padding: 5px 10px;
+    background: rgba(76, 175, 80, 0.1);
+    border-radius: 4px;
+}
+
+.date-inactive {
+    color: #f44336;
+    font-weight: bold;
+    padding: 5px 10px;
+    background: rgba(244, 67, 54, 0.1);
+    border-radius: 4px;
+}

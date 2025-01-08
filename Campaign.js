@@ -180,6 +180,8 @@ app.post('/api/devices/:id/assign', (req, res) => {
 });
 
 // Add endpoint for devices to fetch their assigned campaign
+// Update the devices campaign endpoint
+// Update the devices campaign endpoint
 app.get('/api/devices/:id/campaign', (req, res) => {
     const { id } = req.params;
     const device = devices.find(device => device.id === parseInt(id));
@@ -188,7 +190,6 @@ app.get('/api/devices/:id/campaign', (req, res) => {
         return res.status(404).json({ error: 'Device not found' });
     }
 
-    // Only return campaign if device is active
     if (!device.isActive || !device.activeCampaignId) {
         return res.json({ message: 'No active campaign' });
     }
@@ -196,6 +197,24 @@ app.get('/api/devices/:id/campaign', (req, res) => {
     const campaign = campaigns.find(c => c.id === device.activeCampaignId);
     if (!campaign) {
         return res.json({ message: 'Campaign not found' });
+    }
+
+    // Check if campaign is within its date range
+    if (campaign.startDate && campaign.endDate) {
+        const now = new Date();
+        const start = new Date(campaign.startDate);
+        const end = new Date(campaign.endDate);
+        
+        now.setHours(0, 0, 0, 0);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+
+        if (now < start || now > end) {
+            // Clear the device's campaign assignment
+            device.activeCampaignId = null;
+            device.isActive = false;
+            return res.json({ message: 'Campaign is out of schedule' });
+        }
     }
 
     res.json(campaign);
@@ -383,13 +402,24 @@ class Campaign {
   }
 
   checkAndToggleActive() {
-    const now = new Date();
-    if (this.startDate && this.endDate) {
-      if (now >= this.startDate && now <= this.endDate) {
-        this.isActive = true;
-      } else {
-        this.isActive = false;
+      const now = new Date();
+      if (this.startDate && this.endDate) {
+          // Convert date strings to Date objects if they aren't already
+          const start = new Date(this.startDate);
+          const end = new Date(this.endDate);
+          
+          // Set all times to start of day for accurate comparison
+          now.setHours(0, 0, 0, 0);
+          start.setHours(0, 0, 0, 0);
+          end.setHours(23, 59, 59, 999); // End of day for end date
+          
+          if (now >= start && now <= end) {
+              this.isActive = true;
+          } else {
+              this.isActive = false;
+          }
+          return true; // indicates this campaign has dates
       }
-    }
+      return false; // indicates this campaign doesn't have dates
   }
 }

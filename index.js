@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     `(${new Date(campaign.startDate).toLocaleDateString()} - ${new Date(campaign.endDate).toLocaleDateString()})` : 
                     '(No dates set)';
                 li.innerHTML = `
-                    <span>${campaign.name} ${dates} - ${campaign.isActive ? 'Active' : 'Inactive'}</span>
+                    <span>${campaign.name} ${dates}</span>
                     <div class="campaign-buttons">
                         <button onclick="manageCampaign(${campaign.id})">Manage</button>
                         <button onclick="deleteCampaign(${campaign.id})" class="delete-btn">Delete</button>
@@ -49,33 +49,37 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error fetching campaigns:', error);
         }
-    };
+    };    
 
     // Add new campaign
     campaignForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-
+    
         const name = document.getElementById('name').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-
+    
         // Only validate dates if they are provided
         if (startDate && endDate) {
             const start = new Date(startDate);
             const end = new Date(endDate);
+            
+            // Set time to start of day for accurate comparison
             const today = new Date();
-
+            today.setHours(0, 0, 0, 0);
+            start.setHours(0, 0, 0, 0);
+            
             if (start < today) {
-                alert('Start date cannot be in the past.');
+                alert('Start date must be today or in the future.');
                 return;
             }
-
+    
             if (end < start) {
                 alert('End date must be after the start date.');
                 return;
             }
         }
-
+    
         try {
             await fetch('/api/campaigns', {
                 method: 'POST',
@@ -121,6 +125,22 @@ document.addEventListener('DOMContentLoaded', () => {
             return 'url'; // Default to URL if can't determine type
         }
     };
+
+    document.querySelectorAll('.tab-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            button.classList.add('active');
+            const tabId = button.dataset.tab;
+            document.getElementById(`content-form-${tabId}`).classList.add('active');
+        });
+    });
+    
+    // Update form submissions to use the common duration input
+    const commonDuration = document.getElementById('duration');    
     
     // Modify the content form submit handler
     contentFormFile.addEventListener('submit', async (e) => {
@@ -128,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const campaignId = parseInt(document.getElementById('campaign-id-file').value);
         const type = detectContentType(document.getElementById('source').value);
         const source = document.getElementById('source').value;
-        const duration = parseInt(document.getElementById('duration-file').value);
+        const duration = parseInt(commonDuration.value);
         
         console.log('Adding content:', { campaignId, type, source, duration }); // Debug log
         
@@ -162,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const campaignId = document.getElementById('campaign-id-url').value;
         const type = 'url';
         const source = document.getElementById('url').value;
-        const duration = document.getElementById('duration-url').value;
+        const duration = parseInt(commonDuration.value);
         try {
             await fetch(`/api/campaigns/${campaignId}/content`, {
                 method: 'POST',
@@ -192,17 +212,14 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Manage campaign
+        // Manage campaign
     window.manageCampaign = async (campaignId) => {
         try {
-            // Convert campaignId to number since it's coming as a string from the HTML
             campaignId = parseInt(campaignId);
-            
-            // Find the campaign by its ID
             const campaign = campaigns.find(c => c.id === campaignId);
             
             if (!campaign) {
-                console.log('Available campaigns:', campaigns);
-                console.log('Looking for campaign with ID:', campaignId);
+                console.log('Campaign not found:', campaignId);
                 alert('Campaign not found');
                 return;
             }
@@ -211,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('campaign-id-file').value = campaignId;
             document.getElementById('campaign-id-url').value = campaignId;
             
-            // Display existing content
+            // Create content list
             const contentList = document.createElement('ul');
             contentList.className = 'content-list';
             
@@ -232,13 +249,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 contentList.appendChild(li);
             }
             
-            // Add content list to modal
-            const modalContent = document.querySelector('.modal-content');
-            const existingList = modalContent.querySelector('.content-list');
+            // Get the container where we want to insert the content list
+            const formContainer = document.querySelector('.form-container');
+            
+            // Remove existing content list if it exists
+            const existingList = document.querySelector('.content-list');
             if (existingList) {
                 existingList.remove();
             }
-            modalContent.insertBefore(contentList, document.getElementById('content-form-file'));
+            
+            // Insert the new content list before the form container
+            formContainer.parentNode.insertBefore(contentList, formContainer);
             
             // Populate source dropdown and show modal
             await populateSourceDropdown();
@@ -333,30 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    uploadUrlBtn.addEventListener('click', async () => {
-        const url = urlInput.value;
-        if (!url) {
-            alert('Please enter a URL');
-            return;
-        }
-
-        const blob = new Blob([url], { type: 'text/plain' });
-        const formData = new FormData();
-        formData.append('file', blob, 'url.txt');
-
-        try {
-            await fetch('http://localhost:8282/upload', {
-                method: 'POST',
-                body: formData
-            });
-            alert('URL uploaded successfully');
-            await populateSourceDropdown(); // Refresh the source dropdown
-        } catch (error) {
-            console.error('Error uploading URL:', error);
-            alert('Error uploading URL');
-        }
-    });
-
     // Close modal
     closeModal.onclick = () => {
         manageCampaignModal.style.display = 'none';
@@ -396,39 +393,76 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Fetch and display devices
-    const fetchDevices = async () => {
-        try {
-            const response = await fetch('/api/devices');
-            devices = await response.json();
-            deviceList.innerHTML = '';
-            devices.forEach((device) => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <div class="device-info">
-                        <span>${device.name} (ID: ${device.id})</span>
-                        <div class="device-controls">
-                            <select id="campaign-select-${device.id}" onchange="assignCampaign(${device.id}, this.value)">
-                                <option value="">Select Campaign</option>
-                                ${campaigns.map(campaign => `
-                                    <option value="${campaign.id}" ${device.activeCampaignId === campaign.id ? 'selected' : ''}>
-                                        ${campaign.name}
-                                    </option>
-                                `).join('')}
-                            </select>
-                            <button onclick="toggleDevice(${device.id})" class="${device.isActive ? 'active' : ''}">
-                                ${device.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-                            <button onclick="previewDevice(${device.id})" class="preview-btn">Preview</button>
-                            <button onclick="deleteDevice(${device.id})" class="delete-btn">Delete</button>
+                // In index.js, update fetchDevices function
+        const fetchDevices = async () => {
+            try {
+                const response = await fetch('/api/devices');
+                devices = await response.json();
+                deviceList.innerHTML = '';
+                devices.forEach((device) => {
+                    const assignedCampaign = campaigns.find(c => c.id === device.activeCampaignId);
+                    const hasDates = assignedCampaign && assignedCampaign.startDate && assignedCampaign.endDate;
+                    
+                    let isWithinDateRange = false;
+                    if (hasDates) {
+                        const now = new Date();
+                        const start = new Date(assignedCampaign.startDate);
+                        const end = new Date(assignedCampaign.endDate);
+                        
+                        // Set times to compare full days
+                        now.setHours(0, 0, 0, 0);
+                        start.setHours(0, 0, 0, 0);
+                        end.setHours(23, 59, 59, 999);
+                        
+                        isWithinDateRange = now >= start && now <= end;
+                        
+                        // If not within date range, deactivate device and clear campaign
+                        if (!isWithinDateRange && device.activeCampaignId) {
+                            device.isActive = false;
+                            // Deactivate device and clear campaign assignment
+                            fetch(`/api/devices/${device.id}/assign`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ campaignId: null })
+                            });
+                        }
+                    }
+                    
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="device-info">
+                            <span>${device.name} (ID: ${device.id})</span>
+                            <div class="device-controls">
+                                <select id="campaign-select-${device.id}" onchange="assignCampaign(${device.id}, this.value)">
+                                    <option value="">Select Campaign</option>
+                                    ${campaigns.map(campaign => `
+                                        <option value="${campaign.id}" ${device.activeCampaignId === campaign.id ? 'selected' : ''}>
+                                            ${campaign.name}
+                                        </option>
+                                    `).join('')}
+                                </select>
+                                ${hasDates ? 
+                                    isWithinDateRange ? 
+                                        `<span class="date-active">Active (Scheduled)</span>` : 
+                                        `<span class="date-inactive">Inactive (Out of Schedule)</span>`
+                                    : 
+                                    `<button onclick="toggleDevice(${device.id})" class="${device.isActive ? 'active' : ''}">
+                                        ${device.isActive ? 'Deactivate' : 'Activate'}
+                                    </button>`
+                                }
+                                <button onclick="previewDevice(${device.id})" class="preview-btn">Preview</button>
+                                <button onclick="deleteDevice(${device.id})" class="delete-btn">Delete</button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                deviceList.appendChild(li);
-            });
-        } catch (error) {
-            console.error('Error fetching devices:', error);
-        }
-    };
+                    `;
+                    deviceList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error fetching devices:', error);
+            }
+        };
     
     // Add preview function
     window.previewDevice = (deviceId) => {
@@ -503,3 +537,4 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchCampaigns();
     fetchDevices();
 });
+
