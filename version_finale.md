@@ -85,16 +85,6 @@
 - Gestion complète du cycle de vie des campagnes
 - Règles de diffusion paramétrables
 
-## Gestion Utilisateurs
-
-### Création et Gestion des Comptes
-
-- Création/suppression de comptes
-- Système de permissions granulaires
-- Différents niveaux d'accès :
-  * Administrateur
-  * Créateur de campagne
-
 ## Gestion des Devices
 
 ### Identifiant Unique
@@ -122,6 +112,5 @@
 
 ## Contraintes Techniques
 
-- Gestion des permissions par rôle
 - Responsive design
 - Scalabilité
