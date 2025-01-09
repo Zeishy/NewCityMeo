@@ -15,7 +15,7 @@ app.use(express.static(path.join(__dirname)));
 
 // WebSocket server setup
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ 
+const wss = new WebSocket.Server({
   server,
   path: "/ws"
 });
@@ -131,16 +131,16 @@ app.post('/api/campaigns/:id/content', (req, res) => {
     const { id } = req.params;
     const { type, source, duration } = req.body;
     const campaignId = parseInt(id);
-    
+
     console.log('Received content request:', { campaignId, type, source, duration }); // Debug log
-    
+
     const campaign = campaigns.find(c => c.id === campaignId);
-    
+
     if (!campaign) {
         console.log('Campaign not found:', campaignId); // Debug log
         return res.status(404).json({ error: 'Campaign not found' });
     }
-    
+
     try {
         const content = campaign.addContent(type, source, parseInt(duration));
         console.log('Content added successfully:', content); // Debug log
@@ -155,7 +155,7 @@ app.delete('/api/campaigns/:id', (req, res) => {
     const { id } = req.params;
     const campaignId = parseInt(id);
     const index = campaigns.findIndex(campaign => campaign.id === campaignId);
-    
+
     if (index !== -1) {
         campaigns.splice(index, 1);
         res.status(200).json({ message: 'Campaign deleted successfully' });
@@ -169,7 +169,7 @@ app.post('/api/devices/:id/assign', (req, res) => {
   const { id } = req.params;
   const { campaignId } = req.body;
   const device = devices.find(device => device.id === parseInt(id));
-  
+
   if (!device) {
       return res.status(404).json({ error: 'Device not found' });
   }
@@ -179,13 +179,11 @@ app.post('/api/devices/:id/assign', (req, res) => {
   res.json(device);
 });
 
-// Add endpoint for devices to fetch their assigned campaign
-// Update the devices campaign endpoint
 // Update the devices campaign endpoint
 app.get('/api/devices/:id/campaign', (req, res) => {
     const { id } = req.params;
     const device = devices.find(device => device.id === parseInt(id));
-    
+
     if (!device) {
         return res.status(404).json({ error: 'Device not found' });
     }
@@ -204,7 +202,7 @@ app.get('/api/devices/:id/campaign', (req, res) => {
         const now = new Date();
         const start = new Date(campaign.startDate);
         const end = new Date(campaign.endDate);
-        
+
         now.setHours(0, 0, 0, 0);
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
@@ -282,7 +280,7 @@ app.get('/api/devices', (req, res) => {
 
 app.post('/api/devices', (req, res) => {
   const { name } = req.body;
-  const newDevice = { 
+  const newDevice = {
       id: Date.now(),
       name,
       isActive: false,
@@ -306,17 +304,17 @@ app.delete('/api/devices/:id', (req, res) => {
 app.post('/api/devices/:id/toggle', (req, res) => {
     const { id } = req.params;
     const device = devices.find(device => device.id === parseInt(id));
-    
+
     if (!device) {
         return res.status(404).json({ error: 'Device not found' });
     }
 
     device.isActive = !device.isActive;
-    
+
     // Broadcast device state change immediately
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ 
+            client.send(JSON.stringify({
                 type: 'deviceUpdate',
                 deviceId: device.id,
                 isActive: device.isActive,
@@ -407,12 +405,12 @@ class Campaign {
           // Convert date strings to Date objects if they aren't already
           const start = new Date(this.startDate);
           const end = new Date(this.endDate);
-          
+
           // Set all times to start of day for accurate comparison
           now.setHours(0, 0, 0, 0);
           start.setHours(0, 0, 0, 0);
           end.setHours(23, 59, 59, 999); // End of day for end date
-          
+
           if (now >= start && now <= end) {
               this.isActive = true;
           } else {

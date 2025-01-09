@@ -4,6 +4,7 @@ const cors = require('cors');
 const app = express();
 const PORT = process.argv[2] || 8181;
 const DEVICE_ID = process.argv[3];
+const BACKEND_IP = process.argv[4] || 'localhost';
 
 app.use(cors());
 
@@ -23,7 +24,6 @@ app.get('/', (req, res) => {
 });
 
 app.get('/device/:id', (req, res) => {
-    // Modify the HTML content to use /static paths and pass deviceId
     const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -40,6 +40,7 @@ app.get('/device/:id', (req, res) => {
         </div>
         <script>
             window.DEVICE_ID = "${DEVICE_ID}";
+            window.BACKEND_IP = "${BACKEND_IP}";
         </script>
         <script src="/static/activeCampaign.js"></script>
     </body>
@@ -50,4 +51,5 @@ app.get('/device/:id', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Device ${DEVICE_ID} front server running on http://localhost:${PORT}`);
+    console.log(`Connected to backend at http://${BACKEND_IP}:8080`);
 });

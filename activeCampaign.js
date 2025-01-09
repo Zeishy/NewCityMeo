@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Fetch the assigned campaign for this device
     const fetchAssignedCampaign = async () => {
         try {
-            const response = await fetch(`http://localhost:8080/api/devices/${deviceId}/campaign`);
+            const response = await fetch(`http://${window.BACKEND_IP}:8080/api/devices/${deviceId}/campaign`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Set up WebSocket connection for real-time updates
     const connectWebSocket = () => {
-        const socket = new WebSocket('ws://localhost:8080/ws');
+        const socket = new WebSocket('ws://${window.BACKEND_IP}:8080/ws');
         
         socket.addEventListener('open', () => {
             console.log('WebSocket connected');
