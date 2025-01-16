@@ -17,11 +17,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Fetch the assigned campaign for this device
     const fetchAssignedCampaign = async () => {
         try {
+            console.log(`Fetching campaign for device ${deviceId} from ${window.BACKEND_IP}`);
             const response = await fetch(`http://${window.BACKEND_IP}:8080/api/devices/${deviceId}/campaign`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             const data = await response.json();
+            console.log('Campaign data:', data);
             if (data.message) {
                 campaignNameElement.textContent = data.message;
                 return null;
@@ -40,10 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         contentContainer.innerHTML = '';
         let element;
-
+    
         if (item.type === 'image') {
             element = document.createElement('img');
-            element.src = `http://localhost:8282/${item.source}`;
+            // Use the backend IP for content server access
+            element.src = `http://${window.BACKEND_IP}:8282/${item.source}`;
             contentContainer.appendChild(element);
             // Set timeout for next content after image loads
             element.onload = () => {
@@ -52,7 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         } else if (item.type === 'video') {
             element = document.createElement('video');
-            element.src = `http://localhost:8282/${item.source}`;
+            // Use the backend IP for content server access
+            element.src = `http://${window.BACKEND_IP}:8282/${item.source}`;
             element.controls = true;
             element.autoplay = true;
             element.muted = true;
@@ -72,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             carouselInterval = setTimeout(showNextContent, item.duration * 1000);
         }
     };
-
+    
     // Show next content
     const showNextContent = () => {
         if (!contentItems || contentItems.length === 0) return;
@@ -82,14 +86,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Update campaign content
     const updateCampaign = async () => {
+        console.log('Updating campaign...');
         const campaign = await fetchAssignedCampaign();
+        console.log('Fetched campaign:', campaign);
+        
         if (campaign && campaign.contents?.length > 0) {
+            console.log('Campaign has contents:', campaign.contents);
             contentItems = campaign.contents;
             currentContentIndex = 0;
-            displayContentItem(contentItems[currentContentIndex]);
+            await displayContentItem(contentItems[currentContentIndex]);
         } else {
+            console.log('No campaign or no contents');
             contentContainer.innerHTML = '';
-            campaignNameElement.textContent = ''; // Keep this to clear any existing text
+            campaignNameElement.textContent = '';
             if (carouselInterval) {
                 clearTimeout(carouselInterval);
             }
@@ -112,7 +121,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await updateCampaign();
             }
         });
-    
+
         socket.addEventListener('close', () => {
             console.log('WebSocket disconnected, reconnecting...');
             setTimeout(connectWebSocket, 5000);
