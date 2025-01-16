@@ -34,8 +34,8 @@ else
     URL="http://localhost:8181"
 fi
 
-# Open browser
-xdg-open "$URL"
+# Open Firefox in fullscreen (kiosk) mode
+firefox --kiosk "$URL"
 
 # Wait for the device server process
 wait $DEVICE_PID
