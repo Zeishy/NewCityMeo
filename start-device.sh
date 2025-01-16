@@ -7,8 +7,18 @@ sleep 5
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-# Start device server
+# Function to cleanup on exit
+cleanup() {
+    pkill -f "node active.js"
+    exit 0
+}
+
+# Set trap for cleanup
+trap cleanup EXIT
+
+# Start device server in background and save PID
 ./launch-device.sh &
+DEVICE_PID=$!
 
 # Wait for server to start
 sleep 3
@@ -26,3 +36,6 @@ fi
 
 # Open browser
 xdg-open "$URL"
+
+# Wait for the device server process
+wait $DEVICE_PID
