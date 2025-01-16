@@ -10,6 +10,8 @@ const BACKEND_IP = process.argv[4] || 'localhost';
 app.use(cors());
 app.use(express.json());
 
+app.use(express.static(path.join(__dirname)));
+
 // Add health check route FIRST
 app.get('/health', (req, res) => {
     if (DEVICE_ID) {
@@ -82,6 +84,7 @@ app.use('/static', express.static(path.join(__dirname), {
 // Root route
 app.get('/', (req, res) => {
     if (!isConfigured()) {
+        // Send the setup page
         res.sendFile(path.join(__dirname, 'deviceSetup.html'));
     } else {
         const config = loadConfig();
@@ -92,6 +95,7 @@ app.get('/', (req, res) => {
         }
     }
 });
+
 // Save device configuration
 app.post('/save-config', express.json(), (req, res) => {
     const { id, backendIp, port } = req.body;

@@ -26,14 +26,16 @@ launch_device() {
 monitor_config() {
     initial_config_exists=$([[ -f "$CONFIG_FILE" ]] && echo "yes" || echo "no")
     
+    echo "Starting setup server on port 8181..."
     # Start setup server
     node active.js 8181 &
     setup_pid=$!
     
+    echo "Waiting for configuration..."
     # Wait for configuration to be created or modified
     while true; do
         if [[ "$initial_config_exists" == "no" ]] && [[ -f "$CONFIG_FILE" ]]; then
-            # Configuration was just created
+            echo "Configuration detected, restarting server..."
             kill $setup_pid
             sleep 2
             launch_device
