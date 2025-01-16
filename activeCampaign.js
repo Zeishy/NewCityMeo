@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Set up WebSocket connection for real-time updates
     const connectWebSocket = () => {
-        const socket = new WebSocket('ws://${window.BACKEND_IP}:8080/ws');
+        const socket = new WebSocket(`ws://${window.BACKEND_IP}:8080/ws`);
         
         socket.addEventListener('open', () => {
             console.log('WebSocket connected');
@@ -107,10 +107,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         socket.addEventListener('message', async (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'deviceUpdate' && data.deviceId === parseInt(deviceId)) {
-                // Update immediately when device state changes
                 await updateCampaign();
             } else if (data.type === 'campaignUpdate') {
-                // Update when campaign changes
                 await updateCampaign();
             }
         });
