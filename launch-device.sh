@@ -1,13 +1,51 @@
 #!/bin/bash
-# launch-device.sh
-BACKEND_IP=$1
-PORT=$2
-DEVICE_ID=$3
 
-if [ -z "$BACKEND_IP" ] || [ -z "$PORT" ] || [ -z "$DEVICE_ID" ]; then
-    echo "Usage: ./launch-device.sh <backend-ip> <port> <device-id>"
-    echo "Example: ./launch-device.sh 192.168.1.100 8181 1"
-    exit 1
+CONFIG_FILE="device-config.json"
+
+launch_device() {
+    # Kill any existing instances
+    pkill -f "node active.js"
+    
+    # Wait for port to be available
+    sleep 2
+    
+    DEVICE_ID=$(jq -r '.id' "$CONFIG_FILE")
+    BACKEND_IP=$(jq -r '.backendIp' "$CONFIG_FILE")
+    PORT=$(jq -r '.port' "$CONFIG_FILE")
+
+    echo "Starting device $DEVICE_ID with backend $BACKEND_IP on port $PORT"
+    node active.js "$PORT" "$DEVICE_ID" "$BACKEND_IP"
+    
+    # If the server exits with success, restart it
+    if [ $? -eq 0 ] && [ -f "$CONFIG_FILE" ]; then
+        sleep 2
+        launch_device
+    fi
+}
+
+monitor_config() {
+    initial_config_exists=$([[ -f "$CONFIG_FILE" ]] && echo "yes" || echo "no")
+    
+    # Start setup server
+    node active.js 8181 &
+    setup_pid=$!
+    
+    # Wait for configuration to be created or modified
+    while true; do
+        if [[ "$initial_config_exists" == "no" ]] && [[ -f "$CONFIG_FILE" ]]; then
+            # Configuration was just created
+            kill $setup_pid
+            sleep 2
+            launch_device
+            break
+        fi
+        sleep 1
+    done
+}
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Device not configured. Starting setup..."
+    monitor_config
+else
+    launch_device
 fi
-
-node active.js $PORT $DEVICE_ID $BACKEND_IP

@@ -232,7 +232,7 @@ app.delete('/api/campaigns/:id/content/:contentIndex', (req, res) => {
   }
 });
 
-// Add preview endpoint
+// Update preview endpoint
 app.get('/previsualized/:deviceId', (req, res) => {
     const { deviceId } = req.params;
     const html = `
@@ -243,21 +243,6 @@ app.get('/previsualized/:deviceId', (req, res) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Device Preview</title>
         <link rel="stylesheet" href="/activeCampaign.css">
-        <style>
-            .preview-banner {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                background: #333;
-                color: white;
-                padding: 10px;
-                text-align: center;
-            }
-            #campaign-container {
-                margin-top: 50px;
-            }
-        </style>
     </head>
     <body>
         <div class="preview-banner">Preview Mode - Device ID: ${deviceId}</div>
@@ -265,7 +250,10 @@ app.get('/previsualized/:deviceId', (req, res) => {
             <h1 id="campaign-name"></h1>
             <div id="content-container"></div>
         </div>
-        <script>window.DEVICE_ID = "${deviceId}";</script>
+        <script>
+            window.DEVICE_ID = "${deviceId}";
+            window.BACKEND_IP = "localhost";
+        </script>
         <script src="/activeCampaign.js"></script>
     </body>
     </html>

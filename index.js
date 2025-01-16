@@ -466,7 +466,10 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add preview function
     window.previewDevice = (deviceId) => {
-        window.open(`/previsualized/${deviceId}`, `preview_${deviceId}`, 'width=800,height=600');
+        const previewWindow = window.open(`/previsualized/${deviceId}`, `preview_${deviceId}`, 'width=800,height=600');
+        if (previewWindow) {
+            previewWindow.focus();
+        }
     };
     
     window.assignCampaign = async (deviceId, campaignId) => {

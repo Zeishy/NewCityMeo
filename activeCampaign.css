@@ -25,3 +25,34 @@ img, video {
 #campaign-name {
     display: none;
 }
+
+.preview-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    text-align: center;
+    z-index: 1000;
+}
+
+#campaign-container {
+    margin-top: 40px;
+}
+
+#content-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 40px);
+}
+
+#content-container img,
+#content-container video,
+#content-container iframe {
+    max-width: 100%;
+    max-height: calc(100vh - 60px);
+    object-fit: contain;
+}
