@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 configured: true
             };
             
+            console.log('Saving configuration:', config);
             const saveResponse = await fetch('/save-config', {
                 method: 'POST',
                 headers: {
@@ -43,17 +44,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (!saveResponse.ok) {
+                const errorData = await saveResponse.json();
+                console.error('Failed to save configuration:', errorData);
                 throw new Error('Failed to save configuration');
             }
 
+            console.log('Configuration saved successfully. Restarting server...');
             // Restart the server with new configuration
-            await fetch('/restart', {
+            const restartResponse = await fetch('/restart', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(config)
             });
+
+            if (!restartResponse.ok) {
+                const errorData = await restartResponse.json();
+                console.error('Failed to restart server:', errorData);
+                throw new Error('Failed to restart server');
+            }
 
             // Wait longer before checking server
             await new Promise(resolve => setTimeout(resolve, 2000));

@@ -10,45 +10,6 @@ const BACKEND_IP = process.argv[4] || 'localhost';
 app.use(cors());
 app.use(express.json());
 
-app.use(express.static(path.join(__dirname)));
-
-// Add health check route FIRST
-app.get('/health', (req, res) => {
-    if (DEVICE_ID) {
-        res.status(200).send('OK');
-    } else {
-        res.status(503).send('Server not ready');
-    }
-});
-
-// Update the restart endpoint to ensure clean shutdown
-app.post('/restart', (req, res) => {
-    const { port, id, backendIp } = req.body;
-    console.log('Restarting server with:', { port, id, backendIp });
-    res.json({ success: true });
-    
-    // Give time for the response to be sent
-    setTimeout(() => {
-        process.exit(0);
-    }, 500);
-});
-
-// Rest of your routes...
-// Serve activeCampaign.css and activeCampaign.js directly
-app.get('/activeCampaign.css', (req, res) => {
-    res.sendFile(path.join(__dirname, 'activeCampaign.css'));
-});
-
-app.get('/activeCampaign.js', (req, res) => {
-    res.sendFile(path.join(__dirname, 'activeCampaign.js'));
-});
-
-
-app.get('/deviceSetup.js', (req, res) => {
-    res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, 'deviceSetup.js'));
-});
-
 // Config file path
 const CONFIG_PATH = path.join(__dirname, 'device-config.json');
 
@@ -70,16 +31,6 @@ const loadConfig = () => {
         return null;
     }
 };
-
-app.use('/static', express.static(path.join(__dirname), {
-    setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-        } else if (filePath.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
-        }
-    }
-}));
 
 // Root route
 app.get('/', (req, res) => {
@@ -103,14 +54,65 @@ app.post('/save-config', express.json(), (req, res) => {
     
     try {
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        console.log('Configuration saved:', config);
         res.json({ success: true });
     } catch (error) {
+        console.error('Failed to save configuration:', error);
         res.status(500).json({ error: 'Failed to save configuration' });
     }
 });
 
+// Update the restart endpoint to ensure clean shutdown
+app.post('/restart', (req, res) => {
+    const { port, id, backendIp } = req.body;
+    console.log('Restarting server with:', { port, id, backendIp });
+    res.json({ success: true });
+    
+    // Give time for the response to be sent
+    setTimeout(() => {
+        process.exit(0);
+    }, 500);
+});
+
+// Serve static files after root route
+app.use(express.static(path.join(__dirname)));
+
+// Add health check route FIRST
+app.get('/health', (req, res) => {
+    if (DEVICE_ID) {
+        res.status(200).send('OK');
+    } else {
+        res.status(503).send('Server not ready');
+    }
+});
+
+// Update the restart endpoint to ensure clean shutdown
+app.post('/restart', (req, res) => {
+    const { port, id, backendIp } = req.body;
+    console.log('Restarting server with:', { port, id, backendIp });
+    res.json({ success: true });
+    
+    // Give time for the response to be sent
+    setTimeout(() => {
+        process.exit(0);
+    }, 500);
+});
+
+// Serve activeCampaign.css and activeCampaign.js directly
+app.get('/activeCampaign.css', (req, res) => {
+    res.sendFile(path.join(__dirname, 'activeCampaign.css'));
+});
+
+app.get('/activeCampaign.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'activeCampaign.js'));
+});
+
+app.get('/deviceSetup.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'deviceSetup.js'));
+});
+
 // Device page
-// In active.js, update the device page route
 app.get('/device/:id', (req, res) => {
     const deviceId = req.params.id;
     const config = loadConfig();

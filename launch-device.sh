@@ -14,6 +14,13 @@ launch_device() {
     PORT=$(jq -r '.port' "$CONFIG_FILE")
 
     echo "Starting device $DEVICE_ID with backend $BACKEND_IP on port $PORT"
+
+    # Check if the port is already in use and wait until it is free
+    while lsof -i :$PORT; do
+        echo "Port $PORT is in use, waiting..."
+        sleep 2
+    done
+
     node active.js "$PORT" "$DEVICE_ID" "$BACKEND_IP"
     
     # If the server exits with success, restart it
