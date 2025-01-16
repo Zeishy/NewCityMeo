@@ -35,14 +35,17 @@ NewCityMeo est un programme de monitoring d'écran. Il permet de créer et gére
 
 2. Installez Node.js et npm :
     ```bash
-    sudo apt-get install -y nodejs npm
+    sudo apt-get install -y nodejs npm jq
     ```
 
 3. Installez Firefox :
     ```bash
     sudo apt-get install -y firefox
     ```
-
+4. npm install
+    ```bash
+    npm install
+    ```
 ### Configuration du démarrage
 
 1. Clonez le dépôt :
