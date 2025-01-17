@@ -1,10 +1,11 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
 const session = require('express-session');
 const app = express();
 const PORT = process.argv[2] || 8181;
-const DEVICE_ID = process.argv[3];
+const DEVICE_ID = process.argv[3] || null;
 const BACKEND_IP = process.argv[4] || 'localhost';
 
 app.use(cors());
@@ -14,33 +15,114 @@ app.use(session({
     resave: false,
     saveUninitialized: true
 }));
+app.use(express.json());
 
-// Serve static files with correct MIME types
-app.use('/static', express.static(path.join(__dirname), {
-    setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-        } else if (filePath.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
+// Config file path
+const CONFIG_PATH = path.join(__dirname, 'device-config.json');
+
+// Check if device is configured
+const isConfigured = () => {
+    try {
+        return fs.existsSync(CONFIG_PATH);
+    } catch (error) {
+        return false;
+    }
+};
+
+// Load configuration
+const loadConfig = () => {
+    try {
+        const config = JSON.parse(fs.readFileSync(CONFIG_PATH));
+        return config;
+    } catch (error) {
+        return null;
+    }
+};
+
+// Root route
+app.get('/', (req, res) => {
+    if (!isConfigured()) {
+        // Send the setup page
+        res.sendFile(path.join(__dirname, 'deviceSetup.html'));
+    } else {
+        const config = loadConfig();
+        if (config) {
+            res.redirect(`/device/${config.id}`);
+        } else {
+            res.sendFile(path.join(__dirname, 'deviceSetup.html'));
         }
     }
-}));
-
-// Middleware to check if user is logged in
-function isAuthenticated(req, res, next) {
-    if (req.session.user || req.headers['x-auth-token'] === 'true') {
-        return next();
-    }
-    res.redirect('/');
-}
-
-// Serve dashboard page
-app.get('/dashboard', isAuthenticated, (req, res) => {
-    res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-// Serve device page
-app.get('/device/:id', isAuthenticated, (req, res) => {
+// Save device configuration
+app.post('/save-config', express.json(), (req, res) => {
+    const { id, backendIp, port } = req.body;
+    const config = { id, backendIp, port, configured: true };
+    
+    try {
+        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        console.log('Configuration saved:', config);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Failed to save configuration:', error);
+        res.status(500).json({ error: 'Failed to save configuration' });
+    }
+});
+
+// Update the restart endpoint to ensure clean shutdown
+app.post('/restart', (req, res) => {
+    const { port, id, backendIp } = req.body;
+    console.log('Restarting server with:', { port, id, backendIp });
+    res.json({ success: true });
+    
+    // Give time for the response to be sent
+    setTimeout(() => {
+        process.exit(0);
+    }, 500);
+});
+
+// Serve static files after root route
+app.use(express.static(path.join(__dirname)));
+
+// Add health check route FIRST
+app.get('/health', (req, res) => {
+    if (DEVICE_ID) {
+        res.status(200).send('OK');
+    } else {
+        res.status(503).send('Server not ready');
+    }
+});
+
+// Update the restart endpoint to ensure clean shutdown
+app.post('/restart', (req, res) => {
+    const { port, id, backendIp } = req.body;
+    console.log('Restarting server with:', { port, id, backendIp });
+    res.json({ success: true });
+    
+    // Give time for the response to be sent
+    setTimeout(() => {
+        process.exit(0);
+    }, 500);
+});
+
+// Serve activeCampaign.css and activeCampaign.js directly
+app.get('/activeCampaign.css', (req, res) => {
+    res.sendFile(path.join(__dirname, 'activeCampaign.css'));
+});
+
+app.get('/activeCampaign.js', (req, res) => {
+    res.sendFile(path.join(__dirname, 'activeCampaign.js'));
+});
+
+app.get('/deviceSetup.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, 'deviceSetup.js'));
+});
+
+// Device page
+app.get('/device/:id', (req, res) => {
+    const deviceId = req.params.id;
+    const config = loadConfig();
     const html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -48,7 +130,7 @@ app.get('/device/:id', isAuthenticated, (req, res) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Active Campaign</title>
-        <link rel="stylesheet" href="/static/activeCampaign.css">
+        <link rel="stylesheet" href="/activeCampaign.css">
     </head>
     <body>
         <div id="campaign-container">
@@ -56,17 +138,26 @@ app.get('/device/:id', isAuthenticated, (req, res) => {
             <div id="content-container"></div>
         </div>
         <script>
-            window.DEVICE_ID = "${DEVICE_ID}";
-            window.BACKEND_IP = "${BACKEND_IP}";
+            window.DEVICE_ID = "${deviceId}";
+            window.BACKEND_IP = "${config.backendIp}";
         </script>
-        <script src="/static/activeCampaign.js"></script>
+        <script src="/activeCampaign.js"></script>
     </body>
     </html>
     `;
     res.send(html);
 });
 
+// Add proper error handling for static files
+app.use((req, res, next) => {
+    res.status(404).send('File not found');
+});
+
 app.listen(PORT, () => {
-    console.log(`Device ${DEVICE_ID} front server running on http://localhost:${PORT}`);
-    console.log(`Connected to backend at http://${BACKEND_IP}:8080`);
+    if (DEVICE_ID) {
+        console.log(`Device ${DEVICE_ID} front server running on http://localhost:${PORT}`);
+        console.log(`Connected to backend at http://${BACKEND_IP}:8080`);
+    } else {
+        console.log(`Device setup server running on http://localhost:${PORT}`);
+    }
 });

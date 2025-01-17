@@ -24,7 +24,54 @@ NewCityMeo est un programme de monitoring d'écran. Il permet de créer et gére
     cd NewCityMeo
     ```
 
-## Lancement
+## Configuration de l'appareil
+
+### Installation de Node.js, npm et Firefox
+
+1. Mettez à jour la liste des paquets :
+    ```bash
+    sudo apt-get update
+    ```
+
+2. Installez Node.js et npm :
+    ```bash
+    sudo apt-get install -y nodejs npm jq
+    ```
+
+3. Installez Firefox :
+    ```bash
+    sudo apt-get install -y firefox
+    ```
+4. npm install
+    ```bash
+    npm install
+    ```
+### Configuration du démarrage
+
+1. Clonez le dépôt :
+    ```bash
+    git clone git@github.com:Zeishy/NewCityMeo.git
+    ```
+2. Créez un ficher 'Desktop Entry' pour démarrer l'appareil au démarrage du pc:
+    ```bash
+    # filepath: ~/.config/autostart/device-display.desktop
+    [Desktop Entry]
+    Type=Application
+    Name=Device Display
+    Comment=Start device display on boot
+    Exec=/path/to/NewCityMeo/start-device.sh
+    Terminal=false
+    Hidden=false
+    NoDisplay=false
+    X-GNOME-Autostart-enabled=true
+    ```
+
+5. Assurez-vous que le fichier est exécutable :
+    ```bash
+    chmod +x ~/.config/autostart/device-display.desktop
+    ```
+
+## Lancement du serveur
 
 1. Démarrez le programme :
     ```bash
@@ -46,10 +93,10 @@ NewCityMeo est un programme de monitoring d'écran. Il permet de créer et gére
 
     ![alt text](doc_img/image-2.png)
 
-3. Une fois cela crée, nous pouvons maintenant lancé le programme qui nous permettre de voir l'affichage de l'écran:
+3. Une fois cela crée, nous pouvons maintenant lancé le programme qui nous permettre de voir l'affichage de l'écran(ou juste reboot si vous avez fait la configuration de l'appareil):
 
     ```
-    ./launch-device.sh <ip> <port> <id du device>
+    ./start-device.sh
     ```
 
 4. Maintenant nous pouvons créer une campagne que l'on va assigner a notre device:
