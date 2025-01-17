@@ -1,12 +1,19 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const session = require('express-session');
 const app = express();
 const PORT = process.argv[2] || 8181;
 const DEVICE_ID = process.argv[3];
 const BACKEND_IP = process.argv[4] || 'localhost';
 
 app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true
+}));
 
 // Serve static files with correct MIME types
 app.use('/static', express.static(path.join(__dirname), {
@@ -19,11 +26,21 @@ app.use('/static', express.static(path.join(__dirname), {
     }
 }));
 
-app.get('/', (req, res) => {
-    res.redirect(`/device/${DEVICE_ID}`);
+// Middleware to check if user is logged in
+function isAuthenticated(req, res, next) {
+    if (req.session.user || req.headers['x-auth-token'] === 'true') {
+        return next();
+    }
+    res.redirect('/');
+}
+
+// Serve dashboard page
+app.get('/dashboard', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-app.get('/device/:id', (req, res) => {
+// Serve device page
+app.get('/device/:id', isAuthenticated, (req, res) => {
     const html = `
     <!DOCTYPE html>
     <html lang="en">

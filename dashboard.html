@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1>Admin Dashboard</h1>
+        <button onclick="logout()" class="logout-btn">Déconnexion</button>
+    </div>
+
+    <div id="campaigns">
+        <h2>Campaigns</h2>
+        <ul id="campaign-list"></ul>
+    </div>
+    <div id="add-campaign">
+        <h2>Add Campaign</h2>
+        <form id="campaign-form">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            <button type="button" id="toggle-dates-btn">Add Dates</button>
+            <div id="dates-container" style="display: none;">
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate" name="startDate">
+                <label for="endDate">End Date:</label>
+                <input type="date" id="endDate" name="endDate">
+            </div>
+            <button type="submit">Add Campaign</button>
+        </form>
+    </div>
+
+    <!-- Device management section -->
+    <div id="devices">
+        <h2>Devices</h2>
+        <ul id="device-list"></ul>
+        <form id="device-form">
+            <label for="device-name">Device Name:</label>
+            <input type="text" id="device-name" name="device-name" required>
+            <button type="submit">Add Device</button>
+        </form>
+    </div>
+    <!-- Modal for managing campaigns -->
+    <div id="manage-campaign-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Manage Campaign</h2>
+
+            <!-- Common duration input -->
+            <div class="duration-container">
+                <label for="duration">Duration (seconds):</label>
+                <input type="number" id="duration" name="duration" required>
+            </div>
+
+            <!-- Content source tabs -->
+            <div class="content-tabs">
+                <button class="tab-btn active" data-tab="file">File Content</button>
+                <button class="tab-btn" data-tab="url">URL Content</button>
+            </div>
+
+            <div class="form-container">
+                <form id="content-form-file" class="tab-content active">
+                    <input type="hidden" id="campaign-id-file" name="campaign-id">
+                    <label for="source">Source:</label>
+                    <select id="source" name="source" required></select>
+                    <button type="submit">Add Content</button>
+                </form>
+
+                <form id="content-form-url" class="tab-content">
+                    <input type="hidden" id="campaign-id-url" name="campaign-id">
+                    <input type="text" id="url" name="url" placeholder="Enter URL" required>
+                    <button type="submit">Add Content</button>
+                </form>
+                <div>
+                    <button id="upload-content-btn">Upload Content</button>
+                    <input type="file" id="upload-content-input" style="display: none;">
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+    <script src="index.js"></script>
+</body>
+
+</html>
