@@ -356,3 +356,40 @@ body {
     padding: 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
+
+.campaigns-section,
+.devices-section {
+    max-height: 70vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.campaign-list,
+.device-list {
+    max-height: calc(70vh - 100px);
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+/* Style pour la barre de défilement */
+.campaign-list::-webkit-scrollbar,
+.device-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.campaign-list::-webkit-scrollbar-track,
+.device-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.campaign-list::-webkit-scrollbar-thumb,
+.device-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.campaign-list::-webkit-scrollbar-thumb:hover,
+.device-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
