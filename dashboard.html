@@ -4,84 +4,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard</title>
+    <title>Tableau de Bord Admin</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 
 <body>
-    <div class="header">
-        <h1>Admin Dashboard</h1>
-        <button onclick="logout()" class="logout-btn">Déconnexion</button>
-    </div>
+    <header class="main-header">
+        <h2><i class="fas fa-tv"></i> NewCityMeo</h2>
+        <div class="user-controls">
+            <span class="user-name">Admin</span>
+            <button onclick="logout()" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </button>
+        </div>
+    </header>
 
-    <div id="campaigns">
-        <h2>Campaigns</h2>
-        <ul id="campaign-list"></ul>
-    </div>
-    <div id="add-campaign">
-        <h2>Add Campaign</h2>
-        <form id="campaign-form">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" required>
-            <button type="button" id="toggle-dates-btn">Add Dates</button>
-            <div id="dates-container" style="display: none;">
-                <label for="startDate">Start Date:</label>
-                <input type="date" id="startDate" name="startDate">
-                <label for="endDate">End Date:</label>
-                <input type="date" id="endDate" name="endDate">
-            </div>
-            <button type="submit">Add Campaign</button>
-        </form>
-    </div>
-
-    <!-- Device management section -->
-    <div id="devices">
-        <h2>Devices</h2>
-        <ul id="device-list"></ul>
-        <form id="device-form">
-            <label for="device-name">Device Name:</label>
-            <input type="text" id="device-name" name="device-name" required>
-            <button type="submit">Add Device</button>
-        </form>
-    </div>
-    <!-- Modal for managing campaigns -->
-    <div id="manage-campaign-modal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Manage Campaign</h2>
-
-            <!-- Common duration input -->
-            <div class="duration-container">
-                <label for="duration">Duration (seconds):</label>
-                <input type="number" id="duration" name="duration" required>
-            </div>
-
-            <!-- Content source tabs -->
-            <div class="content-tabs">
-                <button class="tab-btn active" data-tab="file">File Content</button>
-                <button class="tab-btn" data-tab="url">URL Content</button>
-            </div>
-
-            <div class="form-container">
-                <form id="content-form-file" class="tab-content active">
-                    <input type="hidden" id="campaign-id-file" name="campaign-id">
-                    <label for="source">Source:</label>
-                    <select id="source" name="source" required></select>
-                    <button type="submit">Add Content</button>
-                </form>
-
-                <form id="content-form-url" class="tab-content">
-                    <input type="hidden" id="campaign-id-url" name="campaign-id">
-                    <input type="text" id="url" name="url" placeholder="Enter URL" required>
-                    <button type="submit">Add Content</button>
-                </form>
-                <div>
-                    <button id="upload-content-btn">Upload Content</button>
-                    <input type="file" id="upload-content-input" style="display: none;">
+    <main class="main-content">
+        <header class="top-header">
+            <div class="search-container">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Rechercher...">
                 </div>
             </div>
+        </header>
 
+        <div class="dashboard-grid">
+            <section class="campaigns-section card">
+                <div class="section-header">
+                    <h2><i class="fas fa-bullhorn"></i> Campagnes</h2>
+                </div>
+                <ul id="campaign-list" class="campaign-list"></ul>
+                <form id="campaign-form" class="campaign-form hidden">
+                    <input type="text" id="name" name="name" placeholder="Nom de la campagne" required>
+                    <button type="button" id="toggle-dates-btn" class="secondary-btn">
+                        <i class="fas fa-calendar"></i> Ajouter des dates
+                    </button>
+                    <div id="dates-container" class="dates-container hidden">
+                        <input type="date" id="startDate" name="startDate" placeholder="Date de début">
+                        <input type="date" id="endDate" name="endDate" placeholder="Date de fin">
+                    </div>
+                    <button type="submit" class="submit-btn">Ajouter</button>
+                </form>
+            </section>
 
+            <section class="devices-section card">
+                <div class="section-header">
+                    <h2><i class="fas fa-desktop"></i> Appareils</h2>
+                </div>
+                <ul id="device-list" class="device-list"></ul>
+                <form id="device-form" class="device-form hidden">
+                    <input type="text" id="device-name" placeholder="Nom de l'appareil" required>
+                    <button type="submit" class="submit-btn">Ajouter</button>
+                </form>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal pour gérer les campagnes -->
+    <div id="manage-campaign-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Gérer la Campagne</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="duration-container">
+                    <label for="duration">Durée (secondes):</label>
+                    <input type="number" id="duration" name="duration" required>
+                </div>
+
+                <div class="content-tabs">
+                    <button class="tab-btn active" data-tab="file">
+                        <i class="fas fa-file"></i> Contenu Fichier
+                    </button>
+                    <button class="tab-btn" data-tab="url">
+                        <i class="fas fa-link"></i> Contenu URL
+                    </button>
+                </div>
+
+                <div class="form-container">
+                    <form id="content-form-file" class="tab-content active">
+                        <input type="hidden" id="campaign-id-file" name="campaign-id">
+                        <label for="source">Source:</label>
+                        <select id="source" name="source" required></select>
+                        <button type="submit" class="submit-btn">Ajouter le contenu</button>
+                    </form>
+
+                    <form id="content-form-url" class="tab-content">
+                        <input type="hidden" id="campaign-id-url" name="campaign-id">
+                        <input type="text" id="url" name="url" placeholder="Entrer l'URL" required>
+                        <button type="submit" class="submit-btn">Ajouter le contenu</button>
+                    </form>
+                    <div class="upload-container">
+                        <button id="upload-content-btn" class="secondary-btn">
+                            <i class="fas fa-upload"></i> Télécharger du contenu
+                        </button>
+                        <input type="file" id="upload-content-input" class="hidden">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

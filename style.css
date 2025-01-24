@@ -265,15 +265,126 @@ h1, h2 {
     margin-bottom: 20px;
 }
 
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #2196F3;
+    --background-color: #f5f6fa;
+    --text-color: #2d3436;
+    --header-height: 60px;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.main-header {
+    background: #fff;
+    padding: 15px 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.main-header h2 {
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-name {
+    font-weight: 500;
+    color: var(--text-color);
+}
+
 .logout-btn {
     background-color: #dc3545;
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    padding: 8px 15px;
+    border-radius: 4px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .logout-btn:hover {
     background-color: #c82333;
+}
+
+.main-content {
+    margin-left: 0;
+    padding: 20px;
+}
+
+.top-header {
+    height: var(--header-height);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 20px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.search-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.dashboard-grid {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 20px;
+    padding: 8px 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 300px;
+}
+
+.search-bar i {
+    color: #666;
+    margin-right: 10px;
+}
+
+.search-bar input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+}
+
+.search-bar input::placeholder {
+    color: #999;
 }

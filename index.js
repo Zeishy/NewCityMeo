@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleDatesBtn.addEventListener('click', () => {
         const isHidden = datesContainer.style.display === 'none';
         datesContainer.style.display = isHidden ? 'block' : 'none';
-        toggleDatesBtn.textContent = isHidden ? 'Remove Dates' : 'Add Dates';
+        datesContainer.classList.toggle('hidden', !isHidden);
+        toggleDatesBtn.textContent = isHidden ? 'Retirer les dates' : 'Ajouter des dates';
     });
 
     // Fetch and display campaigns
@@ -50,6 +51,10 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error fetching campaigns:', error);
         }
     };    
+
+    // Cacher le conteneur de dates par défaut
+    datesContainer.style.display = 'none';
+    toggleDatesBtn.textContent = 'Ajouter des dates';
 
     // Add new campaign
     campaignForm.addEventListener('submit', async (e) => {
