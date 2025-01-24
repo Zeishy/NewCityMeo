@@ -28,17 +28,29 @@
                     <h2><i class="fas fa-bullhorn"></i> Campagnes</h2>
                 </div>
                 <ul id="campaign-list" class="campaign-list"></ul>
-                <form id="campaign-form" class="campaign-form hidden">
-                    <input type="text" id="name" name="name" placeholder="Nom de la campagne" required>
-                    <button type="button" id="toggle-dates-btn" class="secondary-btn">
-                        <i class="fas fa-calendar"></i> Ajouter des dates
-                    </button>
-                    <div id="dates-container" class="dates-container hidden">
-                        <input type="date" id="startDate" name="startDate" placeholder="Date de début">
-                        <input type="date" id="endDate" name="endDate" placeholder="Date de fin">
-                    </div>
-                    <button type="submit" class="submit-btn">Ajouter</button>
-                </form>
+                    <form id="campaign-form" class="campaign-form hidden">
+                        <div class="input-group">
+                            <input type="text" id="name" name="name" placeholder="Nom de la campagne" required>
+                            <button type="button" id="toggle-dates-btn" class="secondary-btn">
+                                <i class="fas fa-calendar"></i>
+                            </button>
+                            <button type="submit" class="submit-btn">
+                                <i class="fas fa-plus"></i> Ajouter
+                            </button>
+                        </div>
+                        <div id="dates-container" class="dates-container hidden">
+                            <div class="dates-inputs">
+                                <div class="date-field">
+                                    <i class="fas fa-calendar-day"></i>
+                                    <input type="date" id="startDate" name="startDate" placeholder="Date de début">
+                                </div>
+                                <div class="date-field">
+                                    <i class="fas fa-calendar-check"></i>
+                                    <input type="date" id="endDate" name="endDate" placeholder="Date de fin">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
             </section>
 
             <section class="devices-section card">
@@ -47,8 +59,12 @@
                 </div>
                 <ul id="device-list" class="device-list"></ul>
                 <form id="device-form" class="device-form hidden">
-                    <input type="text" id="device-name" placeholder="Nom de l'appareil" required>
-                    <button type="submit" class="submit-btn">Ajouter</button>
+                    <div class="input-group">
+                        <input type="text" id="device-name" placeholder="Nom de l'appareil" required>
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-plus"></i> Ajouter
+                        </button>
+                    </div>
                 </form>
             </section>
         </div>
